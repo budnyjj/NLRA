@@ -3,12 +3,52 @@ import math
 import sympy as sp
 import numpy as np
 
+###########
+# Helpers #
+###########
+def gen_subs(sym_values, f_subs, values):
+    '''Generate dicts of substitutions of f_subs symbolic
+    variables by corresponding values, with equal distance
+    between them.
+
+    Parameters:
+        sym_values --- tuple of values, which should be replaced, 
+    represented in symbolic form, for example: (x, y)
+
+        f_subs --- tuple of indexed sym_values, for example:
+    (x1, y1, x2, y2)
+
+        values --- tuple of lists of values to substitute, 
+    in same order, as sym_values, for example: 
+    ([x1, x2, ...], [y1, y2, ...])
+
+    Yield:
+        res --- dict of substitutions, for example:
+    {x1: 12, x2: 21, y1: 43, y2: 34}
+    '''
+    # determine distance between neighbour values,
+    # for example x0 and x1
+    dist = len(values[0]) // len(f_subs)
+
+    # result substitution
+    res = {}
+    for val_i in range(dist):
+        for f_subs_i, f_sub in enumerate(f_subs):
+            for sym_i, sym_value in enumerate(sym_values):
+                # param to substitute
+                f_subs_param = f_sub[sym_value]
+
+                # index of current value
+                cur_val_i = val_i + dist*f_subs_i
+                res[f_subs_param] = values[sym_i][cur_val_i]
+        yield res
+
 #######################
 # Statistical methods #
 #######################
-def search_basic(sym_expr, sym_params, sym_values,
-                 base_values, base_estimates, precision=10):
+def search_basic(sym_expr, sym_params, sym_values, base_values):
     '''Search estimates by solving system of equations.
+
     Parameters:
         sym_expr --- sympy object, represents equation,
     for example, 'a * exp(-alpha*x) - y',
@@ -24,31 +64,53 @@ def search_basic(sym_expr, sym_params, sym_values,
     as sym_values, for example, ([x1, x2, ...], [y1, y2, ...]),
     used to compute estimate
 
-        base_estimates --- tuple of start values of estimates, used in
-    iterational search of estimates, in same order, as sym_params
-
-        precision --- precision of numeric solution, specified by
-    number of digits after dot
-
     Return:
-        Estimates of specified symbolic variables
-    '''        
+        res --- tuple of estimates of specified symbolic variables
+    '''
+
+    # number of symbolic parameters
+    num_params = len(sym_params)
 
     # vector function
     f = []
 
-    # set precision
-    sp.mpmath.mp.dps = precision
-    
-    # substitute values into sym_expr
-    for i_param, sym_param in enumerate(sym_params):
+    # vector function substitutions
+    f_subs = []
+
+    # # substitute values into sym_expr
+    # for i_param, sym_param in enumerate(sym_params):
+    #     subs = {}
+    #     for i_val, sym_val in enumerate(sym_values):
+    #         subs[sym_val] = base_values[i_val][i_param]
+
+    #     f.append(sym_expr.subs(subs))
+
+    # generate system of equations
+    for i in range(num_params):
+        # generate substitutions: x -> x1, y -> y1, ...
+        # for each equation
         subs = {}
-        for i_val, sym_val in enumerate(sym_values):
-            subs[sym_val] = base_values[i_val][i_param]
-
+        for sym_value in sym_values:
+            subs[sym_value] = sp.Symbol(
+                str(sym_value) + str(i)
+            )
         f.append(sym_expr.subs(subs))
+        f_subs.append(subs)
 
-    return sp.nsolve(f, sym_params, (10, 0))
+    # symbolic expressions of parameters
+    sym_expr_params = sp.solve(f, sym_params, dict=True)
+    if type(sym_expr_params) is list:
+        # get only first solution
+        sym_expr_params = sym_expr_params[0]
+
+    res = []
+
+    # executes only once
+    for subs in gen_subs(sym_values, f_subs, base_values):
+        for sym_param in sym_params:
+            res.append(sym_expr_params[sym_param].subs(subs))
+
+    return res
 
 def search_mnk(sym_expr, sym_params,
                sym_values, values,
@@ -82,10 +144,10 @@ def search_mnk(sym_expr, sym_params,
 
         num_iter --- number of method iterations
 
-    Yield values:
-        cur_num_iter, estimates --- range of tuples contains target
+    Yield:
+        cur_num_iter, cur_vals --- tuple of target
     estimates by number of iteration
-    '''        
+    '''
 
     res_values_t = res_values.T
     
@@ -111,12 +173,12 @@ def search_mnk(sym_expr, sym_params,
 
         # construct Q from rows
         q_rows = []
-            
+
         for diff_func in diff_funcs:
             q_rows.append(
                 np.vectorize(diff_func)(values)
             )
-            
+
         Q_t = np.vstack(q_rows)
         Q = Q_t.T
                 
@@ -152,27 +214,7 @@ def search_taylor(sym_expr, sym_params, sym_values, values, err_stds):
 
     Return:
         Estimates of specified symbolic variables
-    '''        
-    def gen_subs(sym_values, f_subs, values):
-        '''Generate dicts with substitutions of f_subs symbolic
-        variables by corresponding values, with equal distance
-        between them. 
-        '''
-        # determine distance between neighbour values,
-        # for example x0 and x1
-        dist = len(values[0]) // len(f_subs)
-
-        # result substitution
-        res = {}
-        for val_i in range(dist):
-            for f_subs_i, f_sub in enumerate(f_subs):
-                for sym_i, sym_value in enumerate(sym_values):
-                    # param to substitute
-                    f_subs_param = f_sub[sym_value]
-                    # index of current value
-                    cur_val_i = val_i + dist*f_subs_i
-                    res[f_subs_param] = values[sym_i][cur_val_i]
-            yield res
+    '''
     
     # number of symbolic parameters
     num_params = len(sym_params)
@@ -196,10 +238,14 @@ def search_taylor(sym_expr, sym_params, sym_values, values, err_stds):
             )
         f.append(sym_expr.subs(subs))
         f_subs.append(subs)
-
+        
     # symbolic expressions of parameters
-    sym_expr_params = sp.solve(f, sym_params)[0] # get first solution
-
+    sym_expr_params = sp.solve(f, sym_params, dict=True)
+    
+    if type(sym_expr_params) is list:
+        # get only first solution
+        sym_expr_params = sym_expr_params[0]
+        
     # matrix of symbolic derivatives
     sym_G = []
 
@@ -209,11 +255,12 @@ def search_taylor(sym_expr, sym_params, sym_values, values, err_stds):
     #       [ diff(expr1, x0), diff(expr1, y0), diff(expr1, x1), diff(expr1, y1)],
     #       [ diff(expr2, x0), diff(expr2, y0), diff(expr2, x1), diff(expr2, y1)],
     #     ], where x0, x1, y0, y1 are sym_values
-    for sym_expr_param in sym_expr_params:
+    for sym_param in sym_params:
         g_row = []
         for f_sub in f_subs:
             for sym_value in sym_values:
-                g_row.append(sp.diff(sym_expr_param, f_sub[sym_value]))
+                g_row.append(sp.diff(sym_expr_params[sym_param],
+                                     f_sub[sym_value]))
         sym_G.append(g_row)
 
     # create diagonal matrix of error dispersions
@@ -221,11 +268,8 @@ def search_taylor(sym_expr, sym_params, sym_values, values, err_stds):
     for _ in sym_params:
         for err_std in err_stds:
             err_disps.append(err_std ** 2)
-            
-    R_err = np.diagflat(err_disps)
 
-    # error counter
-    err_cnt = 0
+    R_err = np.diagflat(err_disps)
 
     # accumulation matrix with summary of R
     sum_R_inv = np.zeros((num_params, num_params))
@@ -235,37 +279,30 @@ def search_taylor(sym_expr, sym_params, sym_values, values, err_stds):
 
     # replace symbolic values of f_subs with real values
     for val_subs in gen_subs(sym_values, f_subs, values):
-        try:
-            G = []
-            for sym_g_row in sym_G:
-                g_row = []
-                for sym_diff in sym_g_row:
-                    g_row.append(sym_diff.subs(val_subs))
-                G.append(g_row)
-            G = np.array(G)
-            R = np.dot(np.dot(G, R_err), G.T)
+        G = []
+        for sym_g_row in sym_G:
+            g_row = []
+            for sym_diff in sym_g_row:
+                g_row.append(sym_diff.subs(val_subs))
+            G.append(g_row)
+        G = np.array(G)
 
-            R_inv = np.linalg.inv(R)
-            # print(R_inv)
-            
-            sum_R_inv = sum_R_inv + R_inv
+        R = np.dot(np.dot(G, R_err), G.T)
 
-            # substitute values into sym_expr_param to get theta
-            theta = []
-            for sym_expr_param in sym_expr_params:
-                theta_row = [sym_expr_param.subs(val_subs)]
-                theta.append(theta_row)
+        R_inv = np.linalg.inv(R)
 
-            theta = np.array(theta)
+        sum_R_inv = sum_R_inv + R_inv
 
-            R_inv_theta = np.dot(R_inv, theta)
-            sum_R_inv_theta = sum_R_inv_theta + R_inv_theta
+        # substitute values into sym_expr_param to get theta
+        theta = []
+        for sym_param in sym_params:
+            theta_row = [sym_expr_params[sym_param].subs(val_subs)]
+            theta.append(theta_row)
 
-            # print(R_inv_theta)
-            # print()
-        except (ValueError, np.linalg.linalg.LinAlgError): # singular matrix, skip it
-            err_cnt += 1
-            continue
+        theta = np.array(theta)
+
+        R_inv_theta = np.dot(R_inv, theta)
+        sum_R_inv_theta = sum_R_inv_theta + R_inv_theta
 
     res_matrix = np.dot(np.linalg.inv(sum_R_inv), sum_R_inv_theta)
 
@@ -273,5 +310,5 @@ def search_taylor(sym_expr, sym_params, sym_values, values, err_stds):
     res = []
     for row in res_matrix:
         res.append(row[0])
-        
-    return err_cnt, res
+
+    return res
