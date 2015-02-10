@@ -1,14 +1,12 @@
+* DONE Find Python equivalent to fsolve()
+  SciPy
+* DONE Write Mukha Taylor method realization
+
+* TODO Write tests for one-parameter and three-parameters expressions
+
 * TODO Check main formula for MNK method
-
-
 
 * TODO Use functions disp(), avg() from statistical library
 
-* TODO Find Python equivalent to fsolve()
-  SciPy
-
-* TODO Write Mukha Taylor method realization
-
 * TODO Add cmdline parsing possibility
 
-* TODO Collect statistics about std of estimate values only if one mnk iteration

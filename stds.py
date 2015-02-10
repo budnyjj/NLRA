@@ -72,36 +72,41 @@ for err_x_std, err_y_std in zip(err_x_stds, err_y_stds):
     )(real_y)
 
     # get base values as first pairs of values
-    base_values_first = ([x[0], x[1]],
-                         [y[0], y[1]]
-    )
+    base_values_first = {
+        SYM_X: [x[0], x[1]],
+        SYM_Y: [y[0], y[1]]
+    }
 
     half_len = len(x) / 2
     
     # get base values as half-distant pairs of values
-    base_values_dist = ([x[0], x[half_len]],
-                        [y[0], y[half_len]]
-    )
+    base_values_dist = {
+        SYM_X: [x[0], x[half_len]],
+        SYM_Y: [y[0], y[half_len]]
+    }
 
     # get base values as averages of two half-length subgroups
-    base_values_avg = ([avg(x[:half_len]), avg(x[half_len:])],
-                       [avg(y[:half_len]), avg(y[half_len:])]
-    )
+    base_values_avg = {
+        SYM_X: [avg(x[:half_len]), avg(x[half_len:])],
+        SYM_Y: [avg(y[:half_len]), avg(y[half_len:])]
+    }
     
     ################
     # Basic search #
     ################
     
     # find params with basic method
-    basic_a, basic_alpha = methods.search_basic(SYM_EXPR_DELTA,
-                                                (SYM_A, SYM_ALPHA),
-                                                (SYM_X, SYM_Y),
-                                                base_values_first)
+    basic_a, basic_alpha = methods.search_basic(
+        delta_expression=SYM_EXPR_DELTA,
+        parameters=(SYM_A, SYM_ALPHA),
+        values=base_values_first)
+    
     basic_y = np.vectorize(
         sp.lambdify(SYM_X,
                     SYM_EXPR.subs({SYM_A: basic_a, SYM_ALPHA: basic_alpha})
                 )
     )(real_x)
+    
     basic_disp = disp(basic_y, y)
     basic_std = std(basic_y, y)
     basic_stds.append(basic_std)
@@ -115,13 +120,12 @@ for err_x_std, err_y_std in zip(err_x_stds, err_y_stds):
     # MNK search #
     ##############
     for i, (mnk_a, mnk_alpha) in methods.search_mnk(
-            SYM_EXPR,
-            (SYM_A, SYM_ALPHA),
-            (SYM_X),
-            (x),
-            SYM_Y,
-            y,
-            (basic_a, basic_alpha)):
+            expression=SYM_EXPR,
+            parameters=(SYM_A, SYM_ALPHA),
+            values={SYM_X: x},
+            result_values={SYM_Y: y},
+            init_estimates={SYM_A: basic_a, SYM_ALPHA: basic_alpha}
+    ):
         mnk_y = np.vectorize(
             sp.lambdify(SYM_X,
                         SYM_EXPR.subs({SYM_A: mnk_a,
@@ -139,11 +143,10 @@ for err_x_std, err_y_std in zip(err_x_stds, err_y_stds):
     
     # find params with taylor method
     taylor_a, taylor_alpha = methods.search_taylor(
-        SYM_EXPR_DELTA,
-        (SYM_A, SYM_ALPHA),
-        (SYM_X, SYM_Y),
-        (x, y),
-        (err_x_std, err_y_std)
+        delta_expression=SYM_EXPR_DELTA,
+        parameters=(SYM_A, SYM_ALPHA),
+        values={SYM_X: x, SYM_Y: y},
+        err_stds={SYM_X: err_x_std, SYM_Y: err_y_std}
     )
     
     taylor_y = np.vectorize(

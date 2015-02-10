@@ -16,8 +16,8 @@ from stats.utils import *
 SYM_X, SYM_Y = SYM_VALUES = sp.symbols('x y')
 SYM_A, SYM_ALPHA = SYM_PARAMS = sp.symbols('a alpha')
  
-# SYM_EXPR = sp.sympify('a * exp(-alpha*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - a * exp(-alpha*x)')
+SYM_EXPR = sp.sympify('a * exp(-alpha*x)')
+SYM_EXPR_DELTA = sp.sympify('y - a * exp(-alpha*x)')
 
 # SYM_EXPR = sp.sympify('a / exp(-alpha*x)')
 # SYM_EXPR_DELTA = sp.sympify('y - a / exp(-alpha*x)')
@@ -35,15 +35,15 @@ SYM_A, SYM_ALPHA = SYM_PARAMS = sp.symbols('a alpha')
 # SYM_EXPR_DELTA = sp.sympify('y - a - alpha*log(x)')
 
 # sinusoidal function
-SYM_EXPR = sp.sympify('a + alpha*sin(x)')
-SYM_EXPR_DELTA = sp.sympify('y - (a + alpha*sin(x))')
+# SYM_EXPR = sp.sympify('a + alpha*sin(x)')
+# SYM_EXPR_DELTA = sp.sympify('y - (a + alpha*sin(x))')
 
 MIN_X = 1
 MAX_X = 20    
 NUM_VALS = 20              # number of source values
  
-REAL_A = 2                # real 'a' value of source distribution
-REAL_ALPHA = 0.5          # real 'alpha' value of source distiribution
+REAL_A = 10               # real 'a' value of source distribution
+REAL_ALPHA = 0.01         # real 'alpha' value of source distiribution
  
 ERR_X_AVG = 0              # average of X error values
 ERR_X_STD = 0              # std of X error values
@@ -91,22 +91,22 @@ for iter_i in range(NUM_ITER):
     ################################
     
     # get base values as first pairs of values
-    base_values_first = (
-        [x[0], x[1]],
-        [y[0], y[1]]
-    )
+    base_values_first = {
+        SYM_X: [x[0], x[1]],
+        SYM_Y: [y[0], y[1]]
+    }
 
     # get base values as half-distant pairs of values
-    base_values_dist = (
-        [x[0], x[half_len]],
-        [y[0], y[half_len]]
-    )
+    base_values_dist = {
+        SYM_X: [x[0], x[half_len]],
+        SYM_Y: [y[0], y[half_len]]
+    }
 
     # get base values as averages of two half-length subgroups
-    base_values_avg = (
-        [avg(x[:half_len]), avg(x[half_len:])],
-        [avg(y[:half_len]), avg(y[half_len:])]
-    )
+    base_values_avg = {
+        SYM_X: [avg(x[:half_len]), avg(x[half_len:])],
+        SYM_Y: [avg(y[:half_len]), avg(y[half_len:])]
+    }
 
     ################
     # Basic search #
@@ -114,10 +114,9 @@ for iter_i in range(NUM_ITER):
 
     # find params with basic method
     basic_a, basic_alpha = methods.search_basic(
-        sym_expr=SYM_EXPR_DELTA,
-        sym_params=(SYM_A, SYM_ALPHA),
-        sym_values=(SYM_X, SYM_Y),
-        base_values=base_values_avg
+        delta_expression=SYM_EXPR_DELTA,
+        parameters=(SYM_A, SYM_ALPHA),
+        values=base_values_avg
     )
     
     basic_y = np.vectorize(
@@ -145,13 +144,11 @@ for iter_i in range(NUM_ITER):
     
     # use basic estimates as init estimates for MNK
     for i, (mnk_a, mnk_alpha) in methods.search_mnk(
-            sym_expr=SYM_EXPR,
-            sym_params=(SYM_A, SYM_ALPHA),
-            sym_values=(SYM_X),
-            values=(x),
-            sym_res_value=SYM_Y,
-            res_values=y,
-            init_estimates=(basic_a, basic_alpha)
+            expression=SYM_EXPR,
+            parameters=(SYM_A, SYM_ALPHA),
+            values={SYM_X: x},
+            result_values={SYM_Y: y},
+            init_estimates={SYM_A: basic_a, SYM_ALPHA: basic_alpha}
     ):
         mnk_y = np.vectorize(
             sp.lambdify(
@@ -178,11 +175,10 @@ for iter_i in range(NUM_ITER):
 
     # find params with taylor method
     taylor_a, taylor_alpha = methods.search_taylor(
-        sym_expr=SYM_EXPR_DELTA,
-        sym_params=(SYM_A, SYM_ALPHA),
-        sym_values=(SYM_X, SYM_Y),
-        values=(x, y),
-        err_stds=(ERR_X_STD, ERR_Y_STD)
+        delta_expression=SYM_EXPR_DELTA,
+        parameters=(SYM_A, SYM_ALPHA),
+        values={SYM_X: x, SYM_Y: y},
+        err_stds={SYM_X: ERR_X_STD, SYM_Y: ERR_Y_STD}
     )
  
     taylor_y = np.vectorize(

@@ -6,221 +6,217 @@ import numpy as np
 ###########
 # Helpers #
 ###########
-def gen_subs(sym_values, f_subs, values):
+def gen_subs(f_subs, values):
     '''Generate dicts of substitutions of f_subs symbolic
     variables by corresponding values, with equal distance
     between them.
 
     Parameters:
-        sym_values --- tuple of values, which should be replaced, 
-    represented in symbolic form, for example: (x, y)
+        f_subs --- list of dicts with of indexed symbolical_values,
+    keyed by these symbolical values, for example:
+    [{x: x1, y: y1}, {x: x2, y: y2}]
 
-        f_subs --- tuple of indexed sym_values, for example:
-    (x1, y1, x2, y2)
-
-        values --- tuple of lists of values to substitute, 
-    in same order, as sym_values, for example: 
-    ([x1, x2, ...], [y1, y2, ...])
+        values --- dict of values, keyed by sympy objects 
+    for example, {x: [x1, x2, ...], y: [y1, y2, ...])
 
     Yield:
         res --- dict of substitutions, for example:
     {x1: 12, x2: 21, y1: 43, y2: 34}
     '''
+
+    # get sample parameter as first key of dict
+    s_p = next(iter(values.keys()))    
+    
     # determine distance between neighbour values,
     # for example x0 and x1
-    dist = len(values[0]) // len(f_subs)
-
+    distance = len(values[s_p]) // len(f_subs)
+    
     # result substitution
     res = {}
-    for val_i in range(dist):
+    for val_i in range(distance):        
         for f_subs_i, f_sub in enumerate(f_subs):
-            for sym_i, sym_value in enumerate(sym_values):
+            for sym_value in values:
                 # param to substitute
                 f_subs_param = f_sub[sym_value]
 
                 # index of current value
-                cur_val_i = val_i + dist*f_subs_i
-                res[f_subs_param] = values[sym_i][cur_val_i]
+                cur_val_i = val_i + f_subs_i*distance
+                res[f_subs_param] = values[sym_value][cur_val_i]
         yield res
 
 #######################
 # Statistical methods #
 #######################
-def search_basic(sym_expr, sym_params, sym_values, base_values):
+def search_basic(delta_expression, parameters, values):
     '''Search estimates by solving system of equations.
 
     Parameters:
-        sym_expr --- sympy object, represents equation,
-    for example, 'a * exp(-alpha*x) - y',
-    which is should be equal to 0
+        delta_expression --- sympy object, which represents equation,
+    for example, 'a * exp(-alpha*x) - y', which is should be equal to 0
 
-        sym_params --- tuple of sympy objects, whose estimates we should find,
+        parameters --- list of sympy objects, whose estimates we should find,
     for example, (a, alpha)
 
-        sym_values --- tuple of sympy objects, whose values we have,
-    for example, (x, y)
-
-        base_values --- tuple of list of values, in same order,
-    as sym_values, for example, ([x1, x2, ...], [y1, y2, ...]),
-    used to compute estimate
+        values --- dict of values, keyed by sympy objects 
+    for example, {x: [x1, x2, ...], y: [y1, y2, ...])
 
     Return:
-        res --- tuple of estimates of specified symbolic variables
+        res --- list of estimates of specified symbolic variables
     '''
 
-    # number of symbolic parameters
-    num_params = len(sym_params)
-
+    # number of parameters
+    num_params = len(parameters)
+    
     # vector function
     f = []
 
     # vector function substitutions
     f_subs = []
 
-    # # substitute values into sym_expr
-    # for i_param, sym_param in enumerate(sym_params):
-    #     subs = {}
-    #     for i_val, sym_val in enumerate(sym_values):
-    #         subs[sym_val] = base_values[i_val][i_param]
-
-    #     f.append(sym_expr.subs(subs))
-
     # generate system of equations
-    for i in range(num_params):
+    for param_i in range(num_params):
         # generate substitutions: x -> x1, y -> y1, ...
         # for each equation
         subs = {}
-        for sym_value in sym_values:
+        for sym_value in values:
             subs[sym_value] = sp.Symbol(
-                str(sym_value) + str(i)
+                str(sym_value) + str(param_i)
             )
-        f.append(sym_expr.subs(subs))
+        f.append(delta_expression.subs(subs))
         f_subs.append(subs)
-
+        
     # symbolic expressions of parameters
-    sym_expr_params = sp.solve(f, sym_params, dict=True)
+    sym_expr_params = sp.solve(f, parameters, dict=True)
     if type(sym_expr_params) is list:
         # get only first solution
         sym_expr_params = sym_expr_params[0]
-
+        
     res = []
 
     # executes only once
-    for subs in gen_subs(sym_values, f_subs, base_values):
-        for sym_param in sym_params:
-            res.append(sym_expr_params[sym_param].subs(subs))
+    for subs in gen_subs(f_subs, values):
+        for parameter in parameters:
+            res.append(sym_expr_params[parameter].subs(subs))
 
-    return res
+    # if only one parameter            
+    if len(res) == 1: 
+        return res[0]
+    else:
+        return res
 
-def search_mnk(sym_expr, sym_params,
-               sym_values, values,
-               sym_res_value, res_values,
-               init_estimates, num_iter=1):
+def search_mnk(expression, parameters, values,
+               result_values, init_estimates, num_iter=1):
     '''Search estimates of ditribution parameters with MNK method
 
     Parameters:
-        sym_expr --- sympy object, which represents equation,
+        expression --- sympy object, which represents target expression,
     for example, 'a * exp(-alpha*x)'
 
-        sym_params --- tuple of sympy objects, whose estimates we 
+        parameters --- list of sympy objects, whose estimates we 
     should find, for example, (a, alpha)
 
-        sym_values --- tuple of sympy objects, whose values we have,
-    for example, (x)
+        values --- dict of values, keyed by sympy objects 
+    for example, {x: [x1, x2, ...]}
 
-        values --- tuple of lists of values in same order, 
-    as sym_values, for example, ([x1, x2, ...], [t1, t2, ...]),
-    used to compute estimate
+        result_values --- dict of result values, keyed by sympy objects 
+    for example, {y: [y1, y2, ...]}
 
-        sym_res_value --- tuple of sympy objects, whose values we
-    have as a result of sym_expr, for example, y
-
-        res_values --- list of values in same order, 
-    as sym_res_values, for example, [y1, y2, ...], used to compute
-    estimate
-
-        init_estimates --- tuple of init values of estimates, used in
-    iterational search of estimates, in same order, as sym_params
+        init_estimates --- dict of init values of estimates, used in
+    iterational search of estimates, keyed by sympy objects 
+    for example, {x: 0, y: 0}
 
         num_iter --- number of method iterations
 
     Yield:
-        cur_num_iter, cur_vals --- tuple of target
+        cur_num_iter, cur_estimates --- list of target
     estimates by number of iteration
     '''
-
-    res_values_t = res_values.T
+    
+    # get list of symbolic values
+    sym_vals = tuple(values.keys())
+    
+    # get array of real values
+    vals = []
+    for sym_val in sym_vals:
+        vals.append(values[sym_val])
+    vals = np.array(vals).T
+    
+    # get result values as first value of dict
+    res_vals = [next(iter(result_values.values()))]
+    res_vals = np.array(res_vals).T
     
     # init effective estimates with basic values
-    cur_vals = np.array(init_estimates)
+    cur_estimates = []
+    for parameter in parameters:
+        cur_estimates.append(init_estimates[parameter])
+    cur_estimates = np.array([cur_estimates]).T
     
     for i in range(num_iter):
         # substitute current parameter values into sym_expr
         subs = {}
-        for i_param, sym_param in enumerate(sym_params):
-            subs[sym_param] = cur_vals[i_param]
+        for i_param, sym_param in enumerate(parameters):
+            subs[sym_param] = cur_estimates[i_param]
 
-        cur_f = sp.lambdify(sym_values, sym_expr.subs(subs))
-        
-        cur_appr_t = np.vectorize(cur_f)(values).T
-        
+        cur_f = sp.lambdify(sym_vals, expression.subs(subs))
+
+        cur_appr = np.vectorize(cur_f)(vals)
+
         # compute derivates of sym_expr by sym_params
         diff_funcs = []
-        for sym_param in sym_params:
-            diff_func = sp.diff(sym_expr, sym_param).subs(subs)
-
-            diff_funcs.append(sp.lambdify(sym_values, diff_func))
+        for parameter in parameters:
+            diff_func = sp.diff(expression, parameter).subs(subs)
+            diff_funcs.append(sp.lambdify(sym_vals, diff_func))
 
         # construct Q from rows
         q_rows = []
 
         for diff_func in diff_funcs:
             q_rows.append(
-                np.vectorize(diff_func)(values)
+                np.vectorize(diff_func)(vals)
             )
 
-        Q_t = np.vstack(q_rows)
-        Q = Q_t.T
-                
+        Q = np.hstack(q_rows)
+
+        Q_t = Q.T
+
         # calculate addition = ((Q_t*Q)^-1)*Q_t*(y_t - appr_f_t)
         add = np.linalg.inv(np.dot(Q_t, Q))
         add = np.dot(add, Q_t)
-        add = np.dot(add, res_values_t - cur_appr_t)
+        add = np.dot(add, res_vals - cur_appr)
 
-        cur_vals += add
+        cur_estimates += add
 
-        yield i+1, cur_vals
+        # yield first row
+        yield i+1, cur_estimates.T[0]
 
 
-def search_taylor(sym_expr, sym_params, sym_values, values, err_stds):
+def search_taylor(delta_expression, parameters, values, err_stds):
     '''Search estimates by Taylor method.
-    Parameters:
-        sym_expr --- sympy object, represents equation,
-    for example, 'a * exp(-alpha*x) - y',
-    which is should be equal to 0
 
-        sym_params --- tuple of sympy objects, whose estimates we should find,
+    Parameters:
+        delta_expression --- sympy object, which represents equation,
+    for example, 'a * exp(-alpha*x) - y', which is should be equal to 0
+    
+        parameters --- list of sympy objects, whose estimates we should find,
     for example, (a, alpha)
 
-        sym_values --- tuple of sympy objects, whose values we have,
-    for example, (x, y)
+        values --- dict of values, keyed by sympy objects,
+    for example, {x: [x1, x2, ...], y: [y1, y2, ...])
 
-        values --- tuple of list of values, in same order,
-    as sym_values, for example, ([x1, x2, ...], [y1, y2, ...]),
-    used to compute estimate
-
-        err_stds --- tuple of standart error deviations of values,
-    in same order, as sym_values
+        err_stds --- dict of standart error deviations of values,
+    keyed by sympy objects, for example:
+    {x: 0.2, y: 0.2}
 
     Return:
-        Estimates of specified symbolic variables
+        res -- list of estimates of specified symbolic variables 
     '''
     
     # number of symbolic parameters
-    num_params = len(sym_params)
-    
-    err_cnt = 0
+    num_params = len(parameters)
 
+    # get list of symbolic values
+    sym_vals = tuple(values.keys())
+    
     # vector function
     f = []
 
@@ -228,49 +224,49 @@ def search_taylor(sym_expr, sym_params, sym_values, values, err_stds):
     f_subs = []
 
     # generate system of equations
-    for i in range(num_params):
+    for param_i in range(num_params):
         # generate substitutions: x -> x1, y -> y1, ...
         # for each equation
         subs = {}
-        for sym_value in sym_values:
+        for sym_value in values:
             subs[sym_value] = sp.Symbol(
-                str(sym_value) + str(i)
+                str(sym_value) + str(param_i)
             )
-        f.append(sym_expr.subs(subs))
+        f.append(delta_expression.subs(subs))
         f_subs.append(subs)
         
     # symbolic expressions of parameters
-    sym_expr_params = sp.solve(f, sym_params, dict=True)
-    
+    sym_expr_params = sp.solve(f, parameters, dict=True)
+
     if type(sym_expr_params) is list:
         # get only first solution
         sym_expr_params = sym_expr_params[0]
         
     # matrix of symbolic derivatives
     sym_G = []
-
+    
     # compute derivarives of parameter expressions,
     # and place the in matrix, for example:
     # G = [
     #       [ diff(expr1, x0), diff(expr1, y0), diff(expr1, x1), diff(expr1, y1)],
     #       [ diff(expr2, x0), diff(expr2, y0), diff(expr2, x1), diff(expr2, y1)],
     #     ], where x0, x1, y0, y1 are sym_values
-    for sym_param in sym_params:
+    for parameter in parameters:
         g_row = []
         for f_sub in f_subs:
-            for sym_value in sym_values:
-                g_row.append(sp.diff(sym_expr_params[sym_param],
-                                     f_sub[sym_value]))
+            for sym_val in sym_vals:
+                g_row.append(sp.diff(sym_expr_params[parameter],
+                                     f_sub[sym_val]))
         sym_G.append(g_row)
-
+        
     # create diagonal matrix of error dispersions
     err_disps = []
-    for _ in sym_params:
-        for err_std in err_stds:
-            err_disps.append(err_std ** 2)
+    for _ in parameters:
+        for sym_val in sym_vals:
+            err_disps.append(err_stds[sym_val] ** 2)
 
     R_err = np.diagflat(err_disps)
-
+    
     # accumulation matrix with summary of R
     sum_R_inv = np.zeros((num_params, num_params))
 
@@ -278,7 +274,7 @@ def search_taylor(sym_expr, sym_params, sym_values, values, err_stds):
     sum_R_inv_theta = np.zeros(num_params)
 
     # replace symbolic values of f_subs with real values
-    for val_subs in gen_subs(sym_values, f_subs, values):
+    for val_subs in gen_subs(f_subs, values):
         G = []
         for sym_g_row in sym_G:
             g_row = []
@@ -286,7 +282,7 @@ def search_taylor(sym_expr, sym_params, sym_values, values, err_stds):
                 g_row.append(sym_diff.subs(val_subs))
             G.append(g_row)
         G = np.array(G)
-
+        
         R = np.dot(np.dot(G, R_err), G.T)
 
         R_inv = np.linalg.inv(R)
@@ -295,8 +291,8 @@ def search_taylor(sym_expr, sym_params, sym_values, values, err_stds):
 
         # substitute values into sym_expr_param to get theta
         theta = []
-        for sym_param in sym_params:
-            theta_row = [sym_expr_params[sym_param].subs(val_subs)]
+        for parameter in parameters:
+            theta_row = [sym_expr_params[parameter].subs(val_subs)]
             theta.append(theta_row)
 
         theta = np.array(theta)
@@ -310,5 +306,10 @@ def search_taylor(sym_expr, sym_params, sym_values, values, err_stds):
     res = []
     for row in res_matrix:
         res.append(row[0])
+        
+    # if only one parameter            
+    if len(res) == 1: 
+        return res[0]
+    else:
+        return res
 
-    return res

@@ -16,31 +16,29 @@ class TestBasicTaylor(unittest.TestCase):
     def setUp(self):
         self.num_vals = 20          # number of source values
 
-    def test_linear(self):
+    def test_linear_k(self):
         sym_x, sym_y = sp.symbols('x y')
-        sym_k, sym_b = sp.symbols('k b')
-        sym_expr = sp.sympify('k*x + b')
-        sym_expr_delta = sp.sympify('y - (k*x + b)')
+        sym_k = sp.symbols('k')
+        sym_expr = sp.sympify('k*x')
+        sym_expr_delta = sp.sympify('y - k*x')
 
         min_x = 1
         max_x = 20 
 
         real_k = 2             # real 'k' value of source distribution
-        real_b = 10            # real 'b' value of source distiribution
 
         err_y_avg = 0          # average of Y error values
         err_y_std = 0.01       # std of Y error values
-        
+
         # real X values without errors
         x = np.linspace(min_x, max_x,
                         self.num_vals ,dtype=np.float)
-        
+
         # real Y values without errors
         real_y = np.vectorize(
             sp.lambdify(
                 sym_x, sym_expr.subs(
-                    {sym_k: real_k,
-                     sym_b: real_b}
+                    {sym_k: real_k}
                 )
             )
         )(x)
@@ -51,9 +49,9 @@ class TestBasicTaylor(unittest.TestCase):
         )(real_y)
 
         # find params with taylor method
-        taylor_k, taylor_b = methods.search_taylor(
+        taylor_k = methods.search_taylor(
             delta_expression=sym_expr_delta,
-            parameters=(sym_k, sym_b),
+            parameters=[sym_k],
             values={sym_x: x, sym_y: y},
             err_stds={sym_x: 0, sym_y: err_y_std}
         )
@@ -61,40 +59,86 @@ class TestBasicTaylor(unittest.TestCase):
         taylor_y = np.vectorize(
             sp.lambdify(
                 sym_x,
-                sym_expr.subs({sym_k: taylor_k,
-                               sym_b: taylor_b})
+                sym_expr.subs({sym_k: taylor_k})
             )
         )(x)
 
         self.assertAlmostEqual(real_k, taylor_k, places=1)
+
+
+    def test_linear_b(self):
+        sym_x, sym_y = sp.symbols('x y')
+        sym_b = sp.symbols('b')
+        sym_expr = sp.sympify('b')
+        sym_expr_delta = sp.sympify('y - b')
+
+        min_x = 1
+        max_x = 20 
+
+        real_b = 2             # real 'b' value of source distribution
+
+        err_y_avg = 0          # average of Y error values
+        err_y_std = 0.01       # std of Y error values
+
+        # real X values without errors
+        x = np.linspace(min_x, max_x,
+                        self.num_vals ,dtype=np.float)
+
+        # real Y values without errors
+        real_y = np.vectorize(
+            sp.lambdify(
+                sym_x, sym_expr.subs(
+                    {sym_b: real_b}
+                )
+            )
+        )(x)
+
+        # add Y errors with current normal distribution
+        y = np.vectorize(
+            lambda v: v + random.gauss(err_y_avg, err_y_std)
+        )(real_y)
+
+        # find params with taylor method
+        taylor_b = methods.search_taylor(
+            delta_expression=sym_expr_delta,
+            parameters=[sym_b],
+            values={sym_x: x, sym_y: y},
+            err_stds={sym_x: 0, sym_y: err_y_std}
+        )
+
+        taylor_y = np.vectorize(
+            sp.lambdify(
+                sym_x,
+                sym_expr.subs({sym_b: taylor_b})
+            )
+        )(x)
+
         self.assertAlmostEqual(real_b, taylor_b, places=1)
 
-
+        
     def test_exponential(self):
         sym_x, sym_y = sp.symbols('x y')
-        sym_a, sym_alpha = sp.symbols('a alpha')
-        sym_expr = sp.sympify('a + alpha*exp(x)')
-        sym_expr_delta = sp.sympify('y - (a + alpha*exp(x))')
+        sym_a = sp.symbols('a')
+        sym_expr = sp.sympify('a*exp(x)')
+        sym_expr_delta = sp.sympify('y - a*exp(x)')
 
         min_x = 1
         max_x = 20 
 
         real_a = 10            # real 'a' value of source distribution
-        real_alpha = 0.01      # real 'alpha' value of source distiribution
 
         err_y_avg = 0          # average of Y error values
         err_y_std = 0.01       # std of Y error values
-        
+
         # real X values without errors
         x = np.linspace(min_x, max_x,
                         self.num_vals ,dtype=np.float)
-        
+
         # real Y values without errors
         real_y = np.vectorize(
             sp.lambdify(
                 sym_x, sym_expr.subs(
-                    {sym_a: real_a,
-                     sym_alpha: real_alpha}
+                    {sym_a: real_a}
                 )
             )
         )(x)
@@ -103,11 +147,11 @@ class TestBasicTaylor(unittest.TestCase):
         y = np.vectorize(
             lambda v: v + random.gauss(err_y_avg, err_y_std)
         )(real_y)
-                
+
         # find params with taylor method
-        taylor_a, taylor_alpha = methods.search_taylor(
+        taylor_a = methods.search_taylor(
             delta_expression=sym_expr_delta,
-            parameters=(sym_a, sym_alpha),
+            parameters=[sym_a],
             values={sym_x: x, sym_y: y},
             err_stds={sym_x: 0, sym_y: err_y_std}
         )
@@ -115,26 +159,23 @@ class TestBasicTaylor(unittest.TestCase):
         taylor_y = np.vectorize(
             sp.lambdify(
                 sym_x,
-                sym_expr.subs({sym_a: taylor_a,
-                               sym_alpha: taylor_alpha})
+                sym_expr.subs({sym_a: taylor_a})
             )
         )(x)
 
         self.assertAlmostEqual(real_a, taylor_a, places=1)
-        self.assertAlmostEqual(real_alpha, taylor_alpha, places=1)
 
         
     def test_sinusoidal(self):
         sym_x, sym_y = sp.symbols('x y')
-        sym_a, sym_t = sp.symbols('a t')
-        sym_expr = sp.sympify('a + t*sin(x)')
-        sym_expr_delta = sp.sympify('y - (a + t*sin(x))')
+        sym_a = sp.symbols('a')
+        sym_expr = sp.sympify('a*sin(x)')
+        sym_expr_delta = sp.sympify('y - a*sin(x)')
 
         min_x = 1
         max_x = 20 
 
         real_a = 2             # real 'a' value of source distribution
-        real_t = 0.5           # real 't' value of source distiribution
 
         err_y_avg = 0          # average of Y error values
         err_y_std = 0.01       # std of Y error values
@@ -147,8 +188,7 @@ class TestBasicTaylor(unittest.TestCase):
         real_y = np.vectorize(
             sp.lambdify(
                 sym_x, sym_expr.subs(
-                    {sym_a: real_a,
-                     sym_t: real_t}
+                    {sym_a: real_a}
                 )
             )
         )(x)
@@ -159,9 +199,9 @@ class TestBasicTaylor(unittest.TestCase):
         )(real_y)
         
         # find params with taylor method
-        taylor_a, taylor_t = methods.search_taylor(
+        taylor_a = methods.search_taylor(
             delta_expression=sym_expr_delta,
-            parameters=(sym_a, sym_t),
+            parameters=[sym_a],
             values={sym_x: x, sym_y: y},
             err_stds={sym_x: 0, sym_y: err_y_std}
         )
@@ -169,10 +209,8 @@ class TestBasicTaylor(unittest.TestCase):
         taylor_y = np.vectorize(
             sp.lambdify(
                 sym_x,
-                sym_expr.subs({sym_a: taylor_a,
-                               sym_t: taylor_t})
+                sym_expr.subs({sym_a: taylor_a})
             )
         )(x)
 
         self.assertAlmostEqual(real_a, taylor_a, places=1)
-        self.assertAlmostEqual(real_t, taylor_t, places=1)
