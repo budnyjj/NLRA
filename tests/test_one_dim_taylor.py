@@ -179,11 +179,11 @@ class TestBasicTaylor(unittest.TestCase):
 
         err_y_avg = 0          # average of Y error values
         err_y_std = 0.01       # std of Y error values
-        
+
         # real X values without errors
         x = np.linspace(min_x, max_x,
                         self.num_vals ,dtype=np.float)
-        
+
         # real Y values without errors
         real_y = np.vectorize(
             sp.lambdify(
@@ -197,7 +197,7 @@ class TestBasicTaylor(unittest.TestCase):
         y = np.vectorize(
             lambda v: v + random.gauss(err_y_avg, err_y_std)
         )(real_y)
-        
+
         # find params with taylor method
         taylor_a = methods.search_taylor(
             delta_expression=sym_expr_delta,
