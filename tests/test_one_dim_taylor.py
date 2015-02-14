@@ -48,22 +48,22 @@ class TestBasicTaylor(unittest.TestCase):
             lambda v: v + random.gauss(err_y_avg, err_y_std)
         )(real_y)
 
-        # find params with taylor method
-        taylor_k = methods.search_taylor(
+        # find params with mrt method
+        mrt_k = methods.search_mrt(
             delta_expression=sym_expr_delta,
             parameters=[sym_k],
             values={sym_x: x, sym_y: y},
             err_stds={sym_x: 0, sym_y: err_y_std}
         )
 
-        taylor_y = np.vectorize(
+        mrt_y = np.vectorize(
             sp.lambdify(
                 sym_x,
-                sym_expr.subs({sym_k: taylor_k})
+                sym_expr.subs({sym_k: mrt_k})
             )
         )(x)
 
-        self.assertAlmostEqual(real_k, taylor_k, places=1)
+        self.assertAlmostEqual(real_k, mrt_k, places=1)
 
 
     def test_linear_b(self):
@@ -98,22 +98,22 @@ class TestBasicTaylor(unittest.TestCase):
             lambda v: v + random.gauss(err_y_avg, err_y_std)
         )(real_y)
 
-        # find params with taylor method
-        taylor_b = methods.search_taylor(
+        # find params with mrt method
+        mrt_b = methods.search_mrt(
             delta_expression=sym_expr_delta,
             parameters=[sym_b],
             values={sym_x: x, sym_y: y},
             err_stds={sym_x: 0, sym_y: err_y_std}
         )
 
-        taylor_y = np.vectorize(
+        mrt_y = np.vectorize(
             sp.lambdify(
                 sym_x,
-                sym_expr.subs({sym_b: taylor_b})
+                sym_expr.subs({sym_b: mrt_b})
             )
         )(x)
 
-        self.assertAlmostEqual(real_b, taylor_b, places=1)
+        self.assertAlmostEqual(real_b, mrt_b, places=1)
 
         
     def test_exponential(self):
@@ -148,22 +148,22 @@ class TestBasicTaylor(unittest.TestCase):
             lambda v: v + random.gauss(err_y_avg, err_y_std)
         )(real_y)
 
-        # find params with taylor method
-        taylor_a = methods.search_taylor(
+        # find params with mrt method
+        mrt_a = methods.search_mrt(
             delta_expression=sym_expr_delta,
             parameters=[sym_a],
             values={sym_x: x, sym_y: y},
             err_stds={sym_x: 0, sym_y: err_y_std}
         )
 
-        taylor_y = np.vectorize(
+        mrt_y = np.vectorize(
             sp.lambdify(
                 sym_x,
-                sym_expr.subs({sym_a: taylor_a})
+                sym_expr.subs({sym_a: mrt_a})
             )
         )(x)
 
-        self.assertAlmostEqual(real_a, taylor_a, places=1)
+        self.assertAlmostEqual(real_a, mrt_a, places=1)
 
         
     def test_sinusoidal(self):
@@ -198,19 +198,19 @@ class TestBasicTaylor(unittest.TestCase):
             lambda v: v + random.gauss(err_y_avg, err_y_std)
         )(real_y)
 
-        # find params with taylor method
-        taylor_a = methods.search_taylor(
+        # find params with mrt method
+        mrt_a = methods.search_mrt(
             delta_expression=sym_expr_delta,
             parameters=[sym_a],
             values={sym_x: x, sym_y: y},
             err_stds={sym_x: 0, sym_y: err_y_std}
         )
 
-        taylor_y = np.vectorize(
+        mrt_y = np.vectorize(
             sp.lambdify(
                 sym_x,
-                sym_expr.subs({sym_a: taylor_a})
+                sym_expr.subs({sym_a: mrt_a})
             )
         )(x)
 
-        self.assertAlmostEqual(real_a, taylor_a, places=1)
+        self.assertAlmostEqual(real_a, mrt_a, places=1)

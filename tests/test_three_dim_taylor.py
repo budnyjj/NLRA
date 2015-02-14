@@ -52,23 +52,23 @@ class TestBasicTaylor(unittest.TestCase):
             lambda v: v + random.gauss(err_y_avg, err_y_std)
         )(real_y)
 
-        # find params with taylor method
-        taylor_a, taylor_b, taylor_c = methods.search_taylor(
+        # find params with mrt method
+        mrt_a, mrt_b, mrt_c = methods.search_mrt(
             delta_expression=sym_expr_delta,
             parameters=(sym_a, sym_b, sym_c),
             values={sym_x: x, sym_y: y},
             err_stds={sym_x: 0, sym_y: err_y_std}
         )
 
-        taylor_y = np.vectorize(
+        mrt_y = np.vectorize(
             sp.lambdify(
                 sym_x,
-                sym_expr.subs({sym_a: taylor_a,
-                               sym_b: taylor_b,
-                               sym_c: taylor_c})
+                sym_expr.subs({sym_a: mrt_a,
+                               sym_b: mrt_b,
+                               sym_c: mrt_c})
             )
         )(x)
 
-        self.assertAlmostEqual(real_a, taylor_a, places=1)
-        self.assertAlmostEqual(real_b, taylor_b, places=1)
-        self.assertAlmostEqual(real_c, taylor_c, places=1)
+        self.assertAlmostEqual(real_a, mrt_a, places=1)
+        self.assertAlmostEqual(real_b, mrt_b, places=1)
+        self.assertAlmostEqual(real_c, mrt_c, places=1)
