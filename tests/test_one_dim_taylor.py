@@ -12,7 +12,9 @@ sys.path.append('.')
 import stats.methods as methods
 from stats.utils import *
 
+
 class TestBasicTaylor(unittest.TestCase):
+
     def setUp(self):
         self.num_vals = 20          # number of source values
 
@@ -23,7 +25,7 @@ class TestBasicTaylor(unittest.TestCase):
         sym_expr_delta = sp.sympify('y - k*x')
 
         min_x = 1
-        max_x = 20 
+        max_x = 20
 
         real_k = 2             # real 'k' value of source distribution
 
@@ -32,14 +34,16 @@ class TestBasicTaylor(unittest.TestCase):
 
         # real X values without errors
         x = np.linspace(min_x, max_x,
-                        self.num_vals ,dtype=np.float)
+                        self.num_vals, dtype=np.float)
 
         # real Y values without errors
         real_y = np.vectorize(
             sp.lambdify(
-                sym_x, sym_expr.subs(
+                sym_x,
+                sym_expr.subs(
                     {sym_k: real_k}
-                )
+                ),
+                'numpy'
             )
         )(x)
 
@@ -59,12 +63,12 @@ class TestBasicTaylor(unittest.TestCase):
         mrt_y = np.vectorize(
             sp.lambdify(
                 sym_x,
-                sym_expr.subs({sym_k: mrt_k})
+                sym_expr.subs({sym_k: mrt_k}),
+                'numpy'
             )
         )(x)
 
         self.assertAlmostEqual(real_k, mrt_k, places=1)
-
 
     def test_linear_b(self):
         sym_x, sym_y = sp.symbols('x y')
@@ -73,7 +77,7 @@ class TestBasicTaylor(unittest.TestCase):
         sym_expr_delta = sp.sympify('y - b')
 
         min_x = 1
-        max_x = 20 
+        max_x = 20
 
         real_b = 2             # real 'b' value of source distribution
 
@@ -82,14 +86,16 @@ class TestBasicTaylor(unittest.TestCase):
 
         # real X values without errors
         x = np.linspace(min_x, max_x,
-                        self.num_vals ,dtype=np.float)
+                        self.num_vals, dtype=np.float)
 
         # real Y values without errors
         real_y = np.vectorize(
             sp.lambdify(
-                sym_x, sym_expr.subs(
+                sym_x,
+                sym_expr.subs(
                     {sym_b: real_b}
-                )
+                ),
+                'numpy'
             )
         )(x)
 
@@ -109,13 +115,13 @@ class TestBasicTaylor(unittest.TestCase):
         mrt_y = np.vectorize(
             sp.lambdify(
                 sym_x,
-                sym_expr.subs({sym_b: mrt_b})
+                sym_expr.subs({sym_b: mrt_b}),
+                'numpy'
             )
         )(x)
 
         self.assertAlmostEqual(real_b, mrt_b, places=1)
 
-        
     def test_exponential(self):
         sym_x, sym_y = sp.symbols('x y')
         sym_a = sp.symbols('a')
@@ -123,7 +129,7 @@ class TestBasicTaylor(unittest.TestCase):
         sym_expr_delta = sp.sympify('y - a*exp(x)')
 
         min_x = 1
-        max_x = 20 
+        max_x = 20
 
         real_a = 10            # real 'a' value of source distribution
 
@@ -132,14 +138,16 @@ class TestBasicTaylor(unittest.TestCase):
 
         # real X values without errors
         x = np.linspace(min_x, max_x,
-                        self.num_vals ,dtype=np.float)
+                        self.num_vals, dtype=np.float)
 
         # real Y values without errors
         real_y = np.vectorize(
             sp.lambdify(
-                sym_x, sym_expr.subs(
+                sym_x,
+                sym_expr.subs(
                     {sym_a: real_a}
-                )
+                ),
+                'numpy'
             )
         )(x)
 
@@ -159,13 +167,13 @@ class TestBasicTaylor(unittest.TestCase):
         mrt_y = np.vectorize(
             sp.lambdify(
                 sym_x,
-                sym_expr.subs({sym_a: mrt_a})
+                sym_expr.subs({sym_a: mrt_a}),
+                'numpy'
             )
         )(x)
 
         self.assertAlmostEqual(real_a, mrt_a, places=1)
 
-        
     def test_sinusoidal(self):
         sym_x, sym_y = sp.symbols('x y')
         sym_a = sp.symbols('a')
@@ -173,7 +181,7 @@ class TestBasicTaylor(unittest.TestCase):
         sym_expr_delta = sp.sympify('y - a*sin(x)')
 
         min_x = 1
-        max_x = 20 
+        max_x = 20
 
         real_a = 2             # real 'a' value of source distribution
 
@@ -182,14 +190,16 @@ class TestBasicTaylor(unittest.TestCase):
 
         # real X values without errors
         x = np.linspace(min_x, max_x,
-                        self.num_vals ,dtype=np.float)
+                        self.num_vals, dtype=np.float)
 
         # real Y values without errors
         real_y = np.vectorize(
             sp.lambdify(
-                sym_x, sym_expr.subs(
+                sym_x,
+                sym_expr.subs(
                     {sym_a: real_a}
-                )
+                ),
+                'numpy'
             )
         )(x)
 
@@ -209,7 +219,8 @@ class TestBasicTaylor(unittest.TestCase):
         mrt_y = np.vectorize(
             sp.lambdify(
                 sym_x,
-                sym_expr.subs({sym_a: mrt_a})
+                sym_expr.subs({sym_a: mrt_a}),
+                'numpy'
             )
         )(x)
 

@@ -2,8 +2,9 @@
   SciPy
 * DONE Write Mukha Taylor method realization
 
-* TODO Write tests for one-parameter and three-parameters expressions
+* DONE Write tests for one-parameter and three-parameters expressions
 
+* TODO Add err_stds logic to MNK method 
 * TODO Check main formula for MNK method
 
 * TODO Use functions disp(), avg() from statistical library

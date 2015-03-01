@@ -12,7 +12,9 @@ sys.path.append('.')
 import stats.methods as methods
 from stats.utils import *
 
+
 class TestBasicTaylor(unittest.TestCase):
+
     def setUp(self):
         self.num_vals = 20          # number of source values
 
@@ -23,7 +25,7 @@ class TestBasicTaylor(unittest.TestCase):
         sym_expr_delta = sp.sympify('y - (a*(x**2) + b*x + c)')
 
         min_x = 1
-        max_x = 20 
+        max_x = 20
 
         real_a = 2             # real 'a' value of source distribution
         real_b = 3             # real 'b' value of source distiribution
@@ -31,11 +33,11 @@ class TestBasicTaylor(unittest.TestCase):
 
         err_y_avg = 0          # average of Y error values
         err_y_std = 0.01       # std of Y error values
-        
+
         # real X values without errors
         x = np.linspace(min_x, max_x,
-                        self.num_vals ,dtype=np.float)
-        
+                        self.num_vals, dtype=np.float)
+
         # real Y values without errors
         real_y = np.vectorize(
             sp.lambdify(
@@ -43,7 +45,8 @@ class TestBasicTaylor(unittest.TestCase):
                     {sym_a: real_a,
                      sym_b: real_b,
                      sym_c: real_c}
-                )
+                ),
+                'numpy'
             )
         )(x)
 
@@ -65,7 +68,8 @@ class TestBasicTaylor(unittest.TestCase):
                 sym_x,
                 sym_expr.subs({sym_a: mrt_a,
                                sym_b: mrt_b,
-                               sym_c: mrt_c})
+                               sym_c: mrt_c}),
+                'numpy'
             )
         )(x)
 

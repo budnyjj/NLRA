@@ -64,7 +64,7 @@ MNK_NUM_ITER = 1             # number of MNK iterations
 # Program code #
 ################
 
-DESCRIPTION = 'Use this script to determine estimates quality'
+DESCRIPTION = 'Use this script to determine estimates accuracy'
 parser = argparse.ArgumentParser(description=DESCRIPTION)
 parser.add_argument('-w', '--write-to', metavar='PATH',
                     type=str, help='file to write plot in')
@@ -92,6 +92,18 @@ print('Error Y std:   {}'.format(ERR_Y_STD))
 print('Number of iterations: {}'.format(NUM_ITER))
 print('-' * 40, '\n')
 
+# plot real parameters
+plt.figure(0)
+plt.plot(REAL_A, REAL_ALPHA,
+         color='m', linestyle=' ',
+         marker='x', markersize=10,
+         mfc='r')
+
+# current accuracies for this stds
+cur_basic_acc = 0
+cur_mnk_acc = 0
+cur_mrt_acc = 0
+
 # iterate by error standart derivation values
 for iter_i in range(NUM_ITER):
     print('Iteration #{}:'.format(iter_i + 1))
@@ -107,25 +119,6 @@ for iter_i in range(NUM_ITER):
     y = np.vectorize(
         lambda v: v + random.gauss(ERR_Y_AVG, ERR_Y_STD)
     )(real_y)
-
-    # plot real values on all figures
-    plt.figure(0)
-    plt.plot(x, y,
-             color='b', linestyle=' ',
-             marker='.', markersize=10,
-             mfc='r', label='values')
-
-    plt.figure(1)
-    plt.plot(x, y,
-             color='b', linestyle=' ',
-             marker='.', markersize=10,
-             mfc='r', label='values')
-
-    plt.figure(2)
-    plt.plot(x, y,
-             color='b', linestyle=' ',
-             marker='.', markersize=10,
-             mfc='r', label='values')
 
     ################################
     # Base values for basic search #
@@ -166,27 +159,18 @@ for iter_i in range(NUM_ITER):
         values=base_values_max_dist
     )
 
-    basic_y = np.vectorize(
-        sp.lambdify(
-            SYM_X,
-            SYM_EXPR.subs({SYM_A: basic_a, SYM_ALPHA: basic_alpha}),
-            'numpy'
-        )
-    )(real_x)
-
-    basic_disp = disp(basic_y, y)
-    basic_std = std(basic_y, y)
-
     print('Basic a:       {}'.format(basic_a))
     print('Basic alpha:   {}'.format(basic_alpha))
-    print('Dispersion:    {}'.format(basic_disp))
-    print('Std:           {}\n'.format(basic_std))
+
+    # add distance between estimates and real values
+    cur_basic_dst = (basic_a - REAL_A)**2 + (basic_alpha - REAL_ALPHA)**2
+    cur_basic_acc += math.sqrt(cur_basic_dst)
 
     plt.figure(0)
-    plt.plot(x, basic_y,
-             color='g', linestyle='-',
-             marker='.', markersize=5,
-             mfc='g')
+    plt.plot(basic_a, basic_alpha,
+             color='g', linestyle=' ',
+             marker='.', markersize=10,
+             mfc='g', label='values')
 
     ##############
     # MNK search #
@@ -209,19 +193,18 @@ for iter_i in range(NUM_ITER):
                 'numpy'
             )
         )(real_x)
-        mnk_disp = disp(mnk_y, y)
-        mnk_std = std(mnk_y, y)
 
         print('MNK({}) a:      {}'.format(i, mnk_a))
         print('MNK({}) alpha:  {}'.format(i, mnk_alpha))
-        print('Dispersion:    {}'.format(mnk_disp))
-        print('Std:           {}\n'.format(mnk_std))
 
-    plt.figure(1)
-    # plot only last iteration
-    plt.plot(x, mnk_y,
-             color='b', linestyle='-',
-             marker='.', markersize=5,
+    # add distance between estimates and real values
+    cur_mnk_dst = (mnk_a - REAL_A)**2 + (mnk_alpha - REAL_ALPHA)**2
+    cur_mnk_dst += math.sqrt(cur_mnk_dst)
+
+    plt.figure(0)
+    plt.plot(mnk_a, mnk_alpha,
+             color='b', linestyle=' ',
+             marker='.', markersize=10,
              mfc='b')
 
     #################
@@ -236,53 +219,31 @@ for iter_i in range(NUM_ITER):
         err_stds={SYM_X: ERR_X_STD, SYM_Y: ERR_Y_STD}
     )
 
-    mrt_y = np.vectorize(
-        sp.lambdify(
-            SYM_X,
-            SYM_EXPR.subs({SYM_A: mrt_a,
-                           SYM_ALPHA: mrt_alpha}),
-            'numpy'
-        )
-    )(real_x)
+    print('MRT a:         {}'.format(mrt_a))
+    print('MRT alpha:     {}'.format(mrt_alpha))
 
-    mrt_disp = disp(mrt_y, y)
-    mrt_std = std(mrt_y, y)
+    # add distance between estimates and real values
+    cur_mrt_dst = (mrt_a - REAL_A)**2 + (mrt_alpha - REAL_ALPHA)**2
+    cur_mrt_acc += math.sqrt(cur_mrt_dst)
 
-    print('Mrt a:         {}'.format(mrt_a))
-    print('Mrt alpha:     {}'.format(mrt_alpha))
-    print('Dispersion:    {}'.format(mrt_disp))
-    print('Std:           {}'.format(mrt_std))
-
-    plt.figure(2)
-    plt.plot(x, mrt_y,
-             color='r', linestyle='-',
-             marker='.', markersize=5,
+    plt.figure(0)
+    plt.plot(mrt_a, mrt_alpha,
+             color='r', linestyle=' ',
+             marker='.', markersize=10,
              mfc='r')
 
     print('-' * 40, '\n')
 
+print('Basic accuracy: {}'.format(cur_basic_acc))
+print('MNK accuracy:   {}'.format(cur_mnk_acc))
+print('MRT accuracy:   {}'.format(cur_mrt_acc))
+
+plt.figure(0)
+plt.xlabel('$ a $')
+plt.ylabel('$ \\alpha $')
+plt.grid(True)
+
 if args.write_to:
-    file_name, file_ext = os.path.splitext(args.write_to)
-
-    plt.figure(0)
-    plt.xlabel('$ X $')
-    plt.ylabel('$ Y $')
-    plt.grid(True)
-    plt.savefig('{}_basic{}'.format(file_name, file_ext),
-                dpi=100)
-
-    plt.figure(1)
-    plt.xlabel('$ X $')
-    plt.ylabel('$ Y $')
-    plt.grid(True)
-    plt.savefig('{}_mnk{}'.format(file_name, file_ext),
-                dpi=100)
-
-    plt.figure(2)
-    plt.xlabel('$ X $')
-    plt.ylabel('$ Y $')
-    plt.grid(True)
-    plt.savefig('{}_mrt{}'.format(file_name, file_ext),
-                dpi=100)
+    plt.savefig(args.write_to, dpi=100)
 
 plt.show()

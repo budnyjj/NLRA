@@ -9,7 +9,9 @@ sys.path.append('.')
 import stats.methods as methods
 from stats.utils import *
 
+
 class TestBasicSearch(unittest.TestCase):
+
     def setUp(self):
         self.num_vals = 20          # number of source values
 
@@ -20,7 +22,7 @@ class TestBasicSearch(unittest.TestCase):
         sym_expr_delta = sp.sympify('y - (a*(x**2) + b*x + c)')
 
         min_x = 1
-        max_x = 20 
+        max_x = 20
 
         real_a = 2            # real 'a' value of source distribution
         real_b = 3            # real 'b' value of source distiribution
@@ -28,8 +30,8 @@ class TestBasicSearch(unittest.TestCase):
 
         # real X values without errors
         x = np.linspace(min_x, max_x,
-                        self.num_vals ,dtype=np.float)
-        
+                        self.num_vals, dtype=np.float)
+
         # real Y values without errors
         y = np.vectorize(
             sp.lambdify(
@@ -37,16 +39,17 @@ class TestBasicSearch(unittest.TestCase):
                     {sym_a: real_a,
                      sym_b: real_b,
                      sym_c: real_c}
-                )
+                ),
+                'numpy'
             )
         )(x)
 
         third_len = self.num_vals / 3
-        
+
         # get base values as half-distant pairs of values
         base_values_dist = {
-            sym_x: [x[0], x[third_len], x[third_len*2]],
-            sym_y: [y[0], y[third_len], y[third_len*2]]
+            sym_x: [x[0], x[third_len], x[third_len * 2]],
+            sym_y: [y[0], y[third_len], y[third_len * 2]]
         }
 
         # find params with basic method
@@ -54,7 +57,7 @@ class TestBasicSearch(unittest.TestCase):
             delta_expression=sym_expr_delta,
             parameters=(sym_a, sym_b, sym_c),
             values=base_values_dist
-        )        
+        )
 
         self.assertAlmostEqual(real_a, basic_a, places=5)
         self.assertAlmostEqual(real_b, basic_b, places=5)

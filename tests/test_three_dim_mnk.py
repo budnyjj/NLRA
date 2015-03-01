@@ -12,7 +12,9 @@ sys.path.append('.')
 import stats.methods as methods
 from stats.utils import *
 
+
 class TestBasicMNK(unittest.TestCase):
+
     def setUp(self):
         self.num_vals = 20          # number of source values
 
@@ -23,7 +25,7 @@ class TestBasicMNK(unittest.TestCase):
         sym_expr_delta = sp.sympify('y - (a*(x**2) + b*x + c)')
 
         min_x = 1
-        max_x = 20 
+        max_x = 20
 
         real_a = 2             # real 'a' value of source distribution
         real_b = 3             # real 'b' value of source distiribution
@@ -31,11 +33,11 @@ class TestBasicMNK(unittest.TestCase):
 
         err_y_avg = 0          # average of Y error values
         err_y_std = 0.01       # std of Y error values
-        
+
         # real X values without errors
         x = np.linspace(min_x, max_x,
-                        self.num_vals ,dtype=np.float)
-        
+                        self.num_vals, dtype=np.float)
+
         # real Y values without errors
         real_y = np.vectorize(
             sp.lambdify(
@@ -43,7 +45,8 @@ class TestBasicMNK(unittest.TestCase):
                     {sym_a: real_a,
                      sym_b: real_b,
                      sym_c: real_c}
-                )
+                ),
+                'numpy'
             )
         )(x)
 
@@ -53,15 +56,15 @@ class TestBasicMNK(unittest.TestCase):
         )(real_y)
 
         third_len = self.num_vals / 3
-        
+
         # get base values as averages of two half-length subgroups
         base_values_avg = {
             sym_x: [avg(x[:third_len]),
-                    avg(x[third_len:third_len*2]),
-                    avg(x[third_len*2:])],
+                    avg(x[third_len:third_len * 2]),
+                    avg(x[third_len * 2:])],
             sym_y: [avg(y[:third_len]),
-                    avg(y[third_len:third_len*2]),
-                    avg(y[third_len*2:])]
+                    avg(y[third_len:third_len * 2]),
+                    avg(y[third_len * 2:])]
         }
 
         # find params with basic method
@@ -89,10 +92,11 @@ class TestBasicMNK(unittest.TestCase):
                     sym_x,
                     sym_expr.subs({sym_a: mnk_a,
                                    sym_b: mnk_b,
-                                   sym_c: mnk_c})
+                                   sym_c: mnk_c}),
+                    'numpy'
                 )
             )(x)
-    
+
         self.assertAlmostEqual(real_a, mnk_a, places=1)
         self.assertAlmostEqual(real_b, mnk_b, places=1)
         self.assertAlmostEqual(real_c, mnk_c, places=1)
