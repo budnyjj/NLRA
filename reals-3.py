@@ -137,8 +137,8 @@ for iter_i in range(NUM_ITER):
         )
     )(real_x)
 
-    basic_disp = disp(basic_y, y)
-    basic_std = std(basic_y, y)
+    basic_disp = disp(basic_y, real_y)
+    basic_std = std(basic_y, real_y)
 
     print('Basic a:       {}'.format(basic_a))
     print('Basic b:       {}'.format(basic_b))
@@ -178,8 +178,8 @@ for iter_i in range(NUM_ITER):
                 )
             )
         )(real_x)
-        mnk_disp = disp(mnk_y, y)
-        mnk_std = std(mnk_y, y)
+        mnk_disp = disp(mnk_y, real_y)
+        mnk_std = std(mnk_y, real_y)
 
         print('MNK({}) a:     {}'.format(i, mnk_a))
         print('MNK({}) b:     {}'.format(i, mnk_b))
@@ -216,8 +216,8 @@ for iter_i in range(NUM_ITER):
         )
     )(real_x)
 
-    mrt_disp = disp(mrt_y, y)
-    mrt_std = std(mrt_y, y)
+    mrt_disp = disp(mrt_y, real_y)
+    mrt_std = std(mrt_y, real_y)
 
     print('Taylor a:      {}'.format(mrt_a))
     print('Taylor b:      {}'.format(mrt_b))

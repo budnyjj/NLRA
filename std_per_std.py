@@ -140,8 +140,8 @@ for err_x_std, err_y_std in zip(err_x_stds, err_y_stds):
                     )
     )(real_x)
 
-    basic_disp = disp(basic_y, y)
-    basic_std = std(basic_y, y)
+    basic_disp = disp(basic_y, real_y)
+    basic_std = std(basic_y, real_y)
     basic_stds.append(basic_std)
 
     print('Basic a:       {}'.format(basic_a))
@@ -167,8 +167,8 @@ for err_x_std, err_y_std in zip(err_x_stds, err_y_stds):
                         'numpy'
                         )
         )(real_x)
-        mnk_disp = disp(mnk_y, y)
-        mnk_std = std(mnk_y, y)
+        mnk_disp = disp(mnk_y, real_y)
+        mnk_std = std(mnk_y, real_y)
 
         if i == MNK_NUM_ITER:
             mnk_stds.append(mnk_std)  # only if last iteration
@@ -193,8 +193,8 @@ for err_x_std, err_y_std in zip(err_x_stds, err_y_stds):
                     'numpy'
                     )
     )(real_x)
-    mrt_disp = disp(mrt_y, y)
-    mrt_std = std(mrt_y, y)
+    mrt_disp = disp(mrt_y, real_y)
+    mrt_std = std(mrt_y, real_y)
     mrt_stds.append(mrt_std)
 
     print('MRT a:         {}'.format(mrt_a))

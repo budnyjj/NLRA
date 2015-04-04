@@ -9,5 +9,57 @@
 
 * TODO Use functions disp(), avg() from statistical library
 
-* TODO Add cmdline parsing possibility
+* TODO Add cmdline parsing possibilit* 
+* TODO Deal with complex error
 
+Traceback (most recent call last):
+	  File "accuracy_per_std_x-y.py", line 190, in <module>
+	    cur_basic_acc += math.sqrt(cur_basic_dst)
+	  File "/usr/lib/python3.4/site-packages/sympy/core/expr.py", line 224, in __float__
+	    raise TypeError("can't convert complex to float")
+	TypeError: can't convert complex to float
+
+Iteration #49:
+Base values: {y: [-0.0075293001914715774, 4614.9609477171107], x: [-0.029456937716281131, 9.9908411985718892]}
+
+Basic a:       -0.00782977901572522 - 7.23133828281059e-5*I
+Basic alpha:   1.32990173357787 + 0.0997974298168369*I*pi
+Traceback (most recent call last):
+  File "accuracy_per_std_x-y.py", line 195, in <module>
+    cur_basic_acc += math.sqrt(cur_basic_dst)
+  File "/usr/lib/python3.4/site-packages/sympy/core/expr.py", line 224, in __float__
+    raise TypeError("can't convert complex to float")
+TypeError: can't convert complex to float
+* TODO Deal with another complex error
+   Basic a:       -0.101943405285032
+   Basic alpha:   -0.0894544312311604
+   MNK(1) a:      0.0730531267037340
+   MNK(1) alpha:  0.151317637432850
+   Traceback (most recent call last):
+     File "./accuracy_per_std_x-y.py", line 249, in <module>
+       err_stds={SYM_X: err_x_std, SYM_Y: err_y_std}
+     File "/home/budnyjj/dev/projects/stats/stats/methods.py", line 313, in search_mrt
+       R_inv = np.linalg.inv(R)
+     File "/usr/lib/python3.4/site-packages/numpy/linalg/linalg.py", line 520, in inv
+       ainv = _umath_linalg.inv(a, signature=signature, extobj=extobj)
+     File "/usr/lib/python3.4/site-packages/sympy/core/expr.py", line 220, in __float__
+       result = self.evalf()
+     File "/usr/lib/python3.4/site-packages/sympy/core/evalf.py", line 1309, in evalf
+       prec = dps_to_prec(n)
+     File "/usr/lib/python3.4/site-packages/sympy/mpmath/libmp/libmpf.py", line 67, in dps_to_prec
+       return max(1, int(round((int(n)+1)*3.3219280948873626)))
+     File "/usr/lib/python3.4/site-packages/sympy/core/expr.py", line 220, in __float__
+       result = self.evalf()
+     File "/usr/lib/python3.4/site-packages/sympy/core/evalf.py", line 1309, in evalf
+       prec = dps_to_prec(n)
+     File "/usr/lib/python3.4/site-packages/sympy/mpmath/libmp/libmpf.py", line 67, in dps_to_prec
+       return max(1, int(round((int(n)+1)*3.3219280948873626)))
+     File "/usr/lib/python3.4/site-packages/sympy/core/expr.py", line 220, in __float__
+       result = self.evalf()
+     File "/usr/lib/python3.4/site-packages/sympy/core/evalf.py", line 1309, in evalf
+       prec = dps_to_prec(n)
+     File "/usr/lib/python3.4/site-packages/sympy/mpmath/libmp/libmpf.py", line 67, in dps_to_prec
+       return max(1, int(round((int(n)+1)*3.3219280948873626)))
+     File "/usr/lib/python3.4/site-packages/sympy/core/expr.py", line 224, in __float__
+       raise TypeError("can't convert complex to float")
+   TypeError: can't convert complex to float

@@ -9,7 +9,7 @@ import sympy as sp
 import matplotlib.pyplot as plt
 
 plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
+plt.rc('font', family='serif', size=20)
 
 import stats.methods as methods
 from stats.utils import *
@@ -44,21 +44,21 @@ SYM_EXPR_DELTA = sp.sympify('y - a * exp(alpha*x)')
 # SYM_EXPR_DELTA = sp.sympify('y - (a + alpha*sin(x))')
 
 MIN_X = 0
-MAX_X = 10
-NUM_VALS = 20              # number of source values
+MAX_X = 7
+NUM_VALS = 14              # number of source values
 
 REAL_A = 31                # real 'a' value of source distribution
 REAL_ALPHA = 0.5           # real 'alpha' value of source distiribution
 
 ERR_X_AVG = 0              # average of X error values
-ERR_X_STD = 0.02              # std of X error values
+ERR_X_STD = 0.1              # std of X error values
 
 ERR_Y_AVG = 0              # average of Y error values
-ERR_Y_STD = 7              # std of Y error values
+ERR_Y_STD = 10             # std of Y error values
 
-NUM_ITER = 10              # number of realizations
+NUM_ITER = 10             # number of realizations
 
-MNK_NUM_ITER = 1             # number of MNK iterations
+MNK_NUM_ITER = 1           # number of MNK iterations
 
 ################
 # Program code #
@@ -109,23 +109,15 @@ for iter_i in range(NUM_ITER):
     )(real_y)
 
     # plot real values on all figures
-    plt.figure(0)
-    plt.plot(x, y,
-             color='b', linestyle=' ',
-             marker='.', markersize=10,
-             mfc='r', label='values')
-
-    plt.figure(1)
-    plt.plot(x, y,
-             color='b', linestyle=' ',
-             marker='.', markersize=10,
-             mfc='r', label='values')
-
-    plt.figure(2)
-    plt.plot(x, y,
-             color='b', linestyle=' ',
-             marker='.', markersize=10,
-             mfc='r', label='values')
+    for i in range(4):
+        plt.figure(i)
+        plt.xlabel('$ X_o $')
+        plt.ylabel('$ Y_o $')
+        plt.grid(True)
+        plt.plot(x, y,
+                 color='b', linestyle=' ',
+                 marker='.', markersize=10,
+                 mfc='r', label='values')
 
     ################################
     # Base values for basic search #
@@ -155,6 +147,11 @@ for iter_i in range(NUM_ITER):
         SYM_Y: [avg(y[:half_len]), avg(y[half_len:])]
     }
 
+    # set base values as max distant values
+    base_values = base_values_max_dist
+    
+    print("Base values: {}\n".format(base_values))
+    
     ################
     # Basic search #
     ################
@@ -163,9 +160,9 @@ for iter_i in range(NUM_ITER):
     basic_a, basic_alpha = methods.search_basic(
         delta_expression=SYM_EXPR_DELTA,
         parameters=(SYM_A, SYM_ALPHA),
-        values=base_values_max_dist
+        values=base_values
     )
-
+    
     basic_y = np.vectorize(
         sp.lambdify(
             SYM_X,
@@ -174,16 +171,16 @@ for iter_i in range(NUM_ITER):
         )
     )(real_x)
 
-    basic_disp = disp(basic_y, y)
-    basic_std = std(basic_y, y)
+    basic_disp = disp(basic_y, real_y)
+    basic_std = std(basic_y, real_y)
 
     print('Basic a:       {}'.format(basic_a))
     print('Basic alpha:   {}'.format(basic_alpha))
     print('Dispersion:    {}'.format(basic_disp))
     print('Std:           {}\n'.format(basic_std))
 
-    plt.figure(0)
-    plt.plot(x, basic_y,
+    plt.figure(1)
+    plt.plot(real_x, basic_y,
              color='g', linestyle='-',
              marker='.', markersize=5,
              mfc='g')
@@ -209,17 +206,17 @@ for iter_i in range(NUM_ITER):
                 'numpy'
             )
         )(real_x)
-        mnk_disp = disp(mnk_y, y)
-        mnk_std = std(mnk_y, y)
+        mnk_disp = disp(mnk_y, real_y)
+        mnk_std = std(mnk_y, real_y)
 
         print('MNK({}) a:      {}'.format(i, mnk_a))
         print('MNK({}) alpha:  {}'.format(i, mnk_alpha))
         print('Dispersion:    {}'.format(mnk_disp))
         print('Std:           {}\n'.format(mnk_std))
 
-    plt.figure(1)
+    plt.figure(2)
     # plot only last iteration
-    plt.plot(x, mnk_y,
+    plt.plot(real_x, mnk_y,
              color='b', linestyle='-',
              marker='.', markersize=5,
              mfc='b')
@@ -245,16 +242,16 @@ for iter_i in range(NUM_ITER):
         )
     )(real_x)
 
-    mrt_disp = disp(mrt_y, y)
-    mrt_std = std(mrt_y, y)
+    mrt_disp = disp(mrt_y, real_y)
+    mrt_std = std(mrt_y, real_y)
 
     print('Mrt a:         {}'.format(mrt_a))
     print('Mrt alpha:     {}'.format(mrt_alpha))
     print('Dispersion:    {}'.format(mrt_disp))
     print('Std:           {}'.format(mrt_std))
 
-    plt.figure(2)
-    plt.plot(x, mrt_y,
+    plt.figure(3)
+    plt.plot(real_x, mrt_y,
              color='r', linestyle='-',
              marker='.', markersize=5,
              mfc='r')
@@ -265,23 +262,18 @@ if args.write_to:
     file_name, file_ext = os.path.splitext(args.write_to)
 
     plt.figure(0)
-    plt.xlabel('$ X $')
-    plt.ylabel('$ Y $')
-    plt.grid(True)
+    plt.savefig('{}_values{}'.format(file_name, file_ext),
+                dpi=100)
+    
+    plt.figure(1)
     plt.savefig('{}_basic{}'.format(file_name, file_ext),
                 dpi=100)
 
-    plt.figure(1)
-    plt.xlabel('$ X $')
-    plt.ylabel('$ Y $')
-    plt.grid(True)
+    plt.figure(2)
     plt.savefig('{}_mnk{}'.format(file_name, file_ext),
                 dpi=100)
 
-    plt.figure(2)
-    plt.xlabel('$ X $')
-    plt.ylabel('$ Y $')
-    plt.grid(True)
+    plt.figure(3)
     plt.savefig('{}_mrt{}'.format(file_name, file_ext),
                 dpi=100)
 

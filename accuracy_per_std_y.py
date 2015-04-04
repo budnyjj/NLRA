@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os.path
 import argparse
@@ -9,7 +9,7 @@ import sympy as sp
 import matplotlib.pyplot as plt
 
 plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
+plt.rc('font', family='serif', size=20)
 
 import stats.methods as methods
 from stats.utils import *
@@ -51,15 +51,15 @@ REAL_A = 31            # real 'a' value of source distribution
 REAL_ALPHA = 0.5       # real 'alpha' value of source distiribution
 
 ERR_X_AVG = 0          # average of X error values
-ERR_X_MIN_STD = 0.1  # minimal std of X error values
-ERR_X_MAX_STD = 0.1  # maximal std of X error values
+ERR_X_MIN_STD = 0.1    # minimal std of X error values
+ERR_X_MAX_STD = 0.1    # maximal std of X error values
 
 ERR_Y_AVG = 0          # average of Y error values
-ERR_Y_MIN_STD = 0.01   # minimal std of Y error values
-ERR_Y_MAX_STD = 10.01  # maximal std of Y error values
+ERR_Y_MIN_STD = 0.1    # minimal std of Y error values
+ERR_Y_MAX_STD = 10.1   # maximal std of Y error values
 
-ERR_NUM_STD_ITER = 10   # number of stds iterations
-NUM_ITER = 50           # number of realizations
+ERR_NUM_STD_ITER = 10  # number of stds iterations
+NUM_ITER = 5           # number of realizations
 
 MNK_NUM_ITER = 1       # number of MNK iterations
 
@@ -245,17 +245,17 @@ for err_x_std, err_y_std in zip(err_x_stds, err_y_stds):
 mnk_accs_plot, = plt.plot(err_y_stds, mnk_accs,
                           color='b', linestyle='-',
                           marker='s', markersize=5,
-                          mfc='b', label='MNK({})'.format(MNK_NUM_ITER))
+                          mfc='b', label='HMHK({})'.format(MNK_NUM_ITER))
 
 mrt_accs_plot, = plt.plot(err_y_stds, mrt_accs,
                           color='r', linestyle='-',
                           marker='v', markersize=5,
-                          mfc='r', label='MRT')
+                          mfc='r', label='MPT')
 
 plt.legend(handles=[  # basic_accs_plot,
-    mnk_accs_plot, mrt_accs_plot])
+    mnk_accs_plot, mrt_accs_plot], fontsize=16)
 
-plt.axis([ERR_Y_MIN_STD, ERR_Y_MAX_STD, 0, 5])
+plt.axis([ERR_Y_MIN_STD, ERR_Y_MAX_STD, 0, 6])
 plt.xlabel('$ \\sigma_y $')
 plt.ylabel('$ \\rho $')
 plt.grid(True)
