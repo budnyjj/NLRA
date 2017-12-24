@@ -2,40 +2,33 @@
 
 import os.path
 import argparse
-import math
-import random
 import numpy as np
 import sympy as sp
 
 from sympy.core.sympify import SympifyError
 
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-import matplotlib.pyplot as plt
-
-plt.rc('text', usetex=True)
-plt.rc('font', family='serif', size=20)
-
+import stats.estimators as estimators
 import stats.methods as methods
-from stats.utils import *
+import stats.accuracy as accuracy
 
 ################
 # Declarations #
 ################
 
+DESCRIPTION = 'Use this script to determine estimates accuracy'
+
 SYM_X, SYM_Y = SYM_VALUES = sp.symbols('x y')
-SYM_A, SYM_ALPHA = SYM_PARAMS = sp.symbols('a alpha')
+SYM_ALPHA, SYM_BETA = SYM_PARAMS = sp.symbols('a b')
 
 # SYM_EXPR = sp.sympify('a * exp(-alpha*x)')
 # SYM_EXPR_DELTA = sp.sympify('y - a * exp(-alpha*x)')
 
-SYM_EXPR = sp.sympify('a * exp(alpha*x)')
-SYM_EXPR_DELTA = sp.sympify('y - a * exp(alpha*x)')
+# SYM_EXPR = sp.sympify('a * exp(alpha*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - a * exp(alpha*x)')
 
 # linear function
-# SYM_EXPR = sp.sympify('a + alpha*x')
-# SYM_EXPR_DELTA = sp.sympify('y - a - alpha*x')
+SYM_EXPR = sp.sympify('a + b*x')
+SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
 
 # quadratic function
 # SYM_EXPR = sp.sympify('a*(x**2) + alpha*x')
@@ -51,104 +44,92 @@ SYM_EXPR_DELTA = sp.sympify('y - a * exp(alpha*x)')
 
 MIN_X = 0
 MAX_X = 10
-NUM_VALS = 20          # number of source values
+NUM_VALS = 100          # number of source values
 
-REAL_A = 31            # real 'a' value of source distribution
-REAL_ALPHA = 0.5       # real 'alpha' value of source distiribution
+PRECISE_ALPHA = 0       # real 'alpha' value of source distribution
+PRECISE_BETA = 1        # real 'beta' value of source distiribution
 
-ERR_X_AVG = 0          # average of X error values
-ERR_X_MIN_STD = 0.001  # minimal std of X error values
-ERR_X_MAX_STD = 0.101  # maximal std of X error values
+ERR_NUM_STD_ITER = 20  # number of stds iterations
 
-ERR_Y_AVG = 0          # average of Y error values
-ERR_Y_MIN_STD = 0.1    # minimal std of Y error values
-ERR_Y_MAX_STD = 10.1   # maximal std of Y error values
+ERR_MIN_STD_X = 0.001  # minimal std of X error values
+ERR_MAX_STD_X = 2.001  # maximal std of X error values
+ERR_STEP_STD_X = (ERR_MAX_STD_X - ERR_MIN_STD_X) / ERR_NUM_STD_ITER
 
-ERR_NUM_STD_ITER = 10  # number of stds iterations
-NUM_ITER = 50          # number of realizations
+ERR_MIN_STD_Y = 0.001  # minimal std of Y error values
+ERR_MAX_STD_Y = 2.001  # maximal std of Y error values
+ERR_STEP_STD_Y = (ERR_MAX_STD_Y - ERR_MIN_STD_Y) / ERR_NUM_STD_ITER
 
-MNK_NUM_ITER = 1       # number of MNK iterations
+NUM_ITER = 100         # number of realizations
+LSE_NUM_ITER = 1       # number of LSE iterations
 
 ################
 # Program code #
 ################
 
-DESCRIPTION = 'Use this script to determine estimates accuracy'
 parser = argparse.ArgumentParser(description=DESCRIPTION)
-parser.add_argument('-w', '--write-to', metavar='PATH',
-                    type=str, help='file to write plot in')
-
-# parse cli options
+parser.add_argument(
+    '-o', '--output', metavar='PATH',
+    type=str, required=True,
+    help='base path to write data')
 args = parser.parse_args()
+output_path, _ = os.path.splitext(args.output)
 
-# real X values without errors
-real_x = np.linspace(MIN_X, MAX_X, NUM_VALS, dtype=np.float)
+print('Expression:               {}'.format(SYM_EXPR))
+print('Precise ALPHA:            {}'.format(PRECISE_ALPHA))
+print('Precise BETA:             {}'.format(PRECISE_BETA))
+print('Real X:                   {}..{}'.format(MIN_X, MAX_X))
+print('STD X:                    {}..{}'.format(ERR_MIN_STD_X, ERR_MAX_STD_X))
+print('STD X step:               {}'.format(ERR_STEP_STD_X))
+print('STD Y:                    {}..{}'.format(ERR_MIN_STD_Y, ERR_MAX_STD_Y))
+print('STD Y step:               {}'.format(ERR_STEP_STD_Y))
+print('Number of iterations:     {}'.format(NUM_ITER))
+print('Output path:              {}'.format(output_path))
 
-# real Y values without errors
-real_y = np.vectorize(
-    sp.lambdify(
-        SYM_X,
-        SYM_EXPR.subs({SYM_A: REAL_A, SYM_ALPHA: REAL_ALPHA}),
-        'numpy'
-    )
-)(real_x)
+# build precise values
+precise_expr = sp.lambdify(
+    SYM_X,
+    SYM_EXPR.subs({SYM_ALPHA: PRECISE_ALPHA, SYM_BETA: PRECISE_BETA}),
+    'numpy')
+precise_vectorized = np.vectorize(precise_expr)
+# get precise values
+precise_vals_x, precise_vals_y = estimators.precise(
+    precise_vectorized, NUM_VALS,
+    MIN_X, MAX_X)
 
 # generate array of X error stds
-err_x_stds = np.linspace(ERR_X_MIN_STD, ERR_X_MAX_STD, ERR_NUM_STD_ITER)
-
+err_stds_x = np.linspace(ERR_MIN_STD_X, ERR_MAX_STD_X, ERR_NUM_STD_ITER)
 # generate array of Y error stds
-err_y_stds = np.linspace(ERR_Y_MIN_STD, ERR_Y_MAX_STD, ERR_NUM_STD_ITER)
-
+err_stds_y = np.linspace(ERR_MIN_STD_Y, ERR_MAX_STD_Y, ERR_NUM_STD_ITER)
 # create meshgrid
-err_x_stds, err_y_stds = np.meshgrid(err_x_stds, err_y_stds)
+err_stds_x, err_stds_y = np.meshgrid(err_stds_x, err_stds_y)
 
 # collect accuracies of estimates
-basic_accs = []
-mnk_accs = []
-mrt_accs = []
+basic_accs = np.zeros((ERR_NUM_STD_ITER, ERR_NUM_STD_ITER))
+lse_accs = np.zeros((ERR_NUM_STD_ITER, ERR_NUM_STD_ITER))
+mrt_accs = np.zeros((ERR_NUM_STD_ITER, ERR_NUM_STD_ITER))
 
-print('Expression:    {}'.format(SYM_EXPR))
-print('Real A:        {}'.format(REAL_A))
-print('Real ALPHA:    {}'.format(REAL_ALPHA))
-print('Number of iterations: {}'.format(ERR_NUM_STD_ITER * NUM_ITER))
-print('-' * 40, '\n')
+num_std_iter = ERR_NUM_STD_ITER**2
 
-# iterate by error standart derivation values
-for err_std_row in np.dstack((err_x_stds, err_y_stds)):
-    row_basic_accs = []
-    row_mnk_accs = []
-    row_mrt_accs = []
-    
-    for err_x_std, err_y_std in err_std_row:
-        print('Error X std:   {}'.format(err_x_std))
-        print('Error Y std:   {}'.format(err_y_std))
-        print('=' * 40, '\n')
-            
-        # current accuracies for this std
-        cur_basic_acc = 0
-        cur_mnk_acc = 0
-        cur_mrt_acc = 0
+half_num_vals = int(NUM_VALS/2)
+# iterate by error standard derivation values
+std_iter = 0
+for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
+    for std_j, (err_std_x, err_std_y) in enumerate(err_std_row):
+        std_iter += 1
+        print("Iteration {}/{}: std X: {:.2f}, std Y: {:.2f}".format(
+              std_iter, num_std_iter, err_std_x, err_std_y))
 
         # number of successful iterations
         basic_num_success_iter = 0
-        mnk_num_success_iter = 0
+        lse_num_success_iter = 0
         mrt_num_success_iter = 0
-        
+
         # iterate by error standart derivation values
         for iter_i in range(NUM_ITER):
-            print('Iteration #{}:'.format(iter_i + 1))
-
-            # add X errors with current normal distribution
-            x = np.vectorize(
-                lambda v: v + random.gauss(ERR_X_AVG, err_x_std)
-            )(real_x)
-
-            half_len = len(x) / 2
-
-            # add Y errors with current normal distribution
-            y = np.vectorize(
-                lambda v: v + random.gauss(ERR_Y_AVG, err_y_std)
-            )(real_y)
+            measured_vals_x, measured_vals_y = estimators.uniform(
+                precise_vectorized, NUM_VALS,
+                MIN_X, MAX_X,
+                err_std_x, err_std_y)
 
             ################################
             # Base values for basic search #
@@ -156,225 +137,113 @@ for err_std_row in np.dstack((err_x_stds, err_y_stds)):
 
             # get base values as first pairs of values
             base_values_first = {
-                SYM_X: [x[0], x[1]],
-                SYM_Y: [y[0], y[1]]
+                SYM_X: [measured_vals_x[0], measured_vals_x[1]],
+                SYM_Y: [measured_vals_y[0], measured_vals_y[1]]
             }
 
             # get base values as half-distant pairs of values
             base_values_half_dist = {
-                SYM_X: [x[0], x[half_len]],
-                SYM_Y: [y[0], y[half_len]]
+                SYM_X: [measured_vals_x[0], measured_vals_x[half_num_vals]],
+                SYM_Y: [measured_vals_y[0], measured_vals_y[half_num_vals]]
             }
 
             # get base values as maximal distant pairs of values
             base_values_max_dist = {
-                SYM_X: [x[0], x[-1]],
-                SYM_Y: [y[0], y[-1]]
+                SYM_X: [measured_vals_x[0], measured_vals_x[-1]],
+                SYM_Y: [measured_vals_y[0], measured_vals_y[-1]]
             }
 
             # get base values as averages of two half-length subgroups
             base_values_avg = {
-                SYM_X: [avg(x[:half_len]), avg(x[half_len:])],
-                SYM_Y: [avg(y[:half_len]), avg(y[half_len:])]
+                SYM_X: [
+                    np.average(measured_vals_x[:half_num_vals]),
+                    np.average(measured_vals_x[half_num_vals:])
+                ],
+                SYM_Y: [
+                    np.average(measured_vals_y[:half_num_vals]),
+                    np.average(measured_vals_y[half_num_vals:])
+                ]
             }
 
             # set base values as max distant values
             base_values = base_values_max_dist
 
-            print("Base values: {}\n".format(base_values))
-
             ################
             # Basic search #
             ################
+            # find params with basic method
+            basic_alpha, basic_beta = methods.search_basic(
+                delta_expression=SYM_EXPR_DELTA,
+                parameters=(SYM_ALPHA, SYM_BETA),
+                values=base_values
+            )
+            # increase number of successful iterations
+            basic_num_success_iter += 1
+            # add distance between estimates and real values
+            basic_acc = accuracy.avg_euclidean_dst(
+                np.array(((PRECISE_ALPHA), (PRECISE_BETA))),
+                np.array(((basic_alpha), (basic_beta))))
+            basic_accs[std_i, std_j] += basic_acc
 
-            try:
-                # find params with basic method
-                basic_a, basic_alpha = methods.search_basic(
-                    delta_expression=SYM_EXPR_DELTA,
-                    parameters=(SYM_A, SYM_ALPHA),
-                    values=base_values
-                )
-
-                print('Basic a:       {}'.format(basic_a))
-                print('Basic alpha:   {}'.format(basic_alpha))
-
-                # add distance between estimates and real values
-                cur_basic_dst = (basic_a - REAL_A)**2 + (basic_alpha - REAL_ALPHA)**2
-                cur_basic_acc += math.sqrt(cur_basic_dst)
-
-            except (TypeError, SympifyError):
-                # If got complex estimate, pass it
-                print("Got complex estimates. Skip it...")
-            else:
-                # increase number of successfull iterations
-                basic_num_success_iter += 1
-                
             ##############
-            # MNK search #
+            # LSE search #
             ##############
+            # use basic estimates as init estimates for LSE
+            lse_alpha = lse_beta = None
+            for i, (lse_alpha_iter, lse_beta_iter) in methods.search_lse(
+                    expression=SYM_EXPR,
+                    parameters=(SYM_ALPHA, SYM_BETA),
+                    values={SYM_X: measured_vals_x},
+                    result_values={SYM_Y: measured_vals_y},
+                    init_estimates={SYM_ALPHA: basic_alpha, SYM_BETA: basic_beta},
+                    num_iter=LSE_NUM_ITER
+            ):
+                lse_alpha, lse_beta = lse_alpha_iter, lse_beta_iter
+            # increase number of successfull iterations
+            lse_num_success_iter += 1
+            # print('LSE({}) alpha: {}'.format(LSE_NUM_ITER, lse_alpha))
+            # print('LSE({}) beta:  {}'.format(LSE_NUM_ITER, lse_beta))
+            lse_acc = accuracy.avg_euclidean_dst(
+                np.array(((PRECISE_ALPHA), (PRECISE_BETA))),
+                np.array(((lse_alpha), (lse_beta))))
+            lse_accs[std_i, std_j] += lse_acc
 
-            try:
-                mnk_a = mnk_alpha = 0
-            
-                # use basic estimates as init estimates for MNK
-                for i, (mnk_tmp_a, mnk_tmp_alpha) in methods.search_mnk(
-                        expression=SYM_EXPR,
-                        parameters=(SYM_A, SYM_ALPHA),
-                        values={SYM_X: x},
-                        result_values={SYM_Y: y},
-                        init_estimates={SYM_A: basic_a, SYM_ALPHA: basic_alpha},
-                        num_iter=MNK_NUM_ITER
-                ):
-                    mnk_a, mnk_alpha = mnk_tmp_a, mnk_tmp_alpha
-
-                print('MNK({}) a:      {}'.format(MNK_NUM_ITER, mnk_a))
-                print('MNK({}) alpha:  {}'.format(MNK_NUM_ITER, mnk_alpha))
-
-                # add distance between estimates and real values
-                cur_mnk_dst = (mnk_a - REAL_A)**2 + (mnk_alpha - REAL_ALPHA)**2
-                cur_mnk_acc += math.sqrt(cur_mnk_dst)
-
-            except (TypeError, SympifyError):
-                # If got complex estimate, pass it
-                print("Got complex estimates. Skip it...")
-            else:
-                # increase number of successfull iterations
-                mnk_num_success_iter += 1
-                
             ##############
             # Mrt search #
             ##############
-            try:
-                # find params with mrt method
-                mrt_a, mrt_alpha = methods.search_mrt(
-                    delta_expression=SYM_EXPR_DELTA,
-                    parameters=(SYM_A, SYM_ALPHA),
-                    values={SYM_X: x, SYM_Y: y},
-                    err_stds={SYM_X: err_x_std, SYM_Y: err_y_std}
-                )
+            # find params with mrt method
+            mrt_alpha, mrt_beta = methods.search_mrt(
+                delta_expression=SYM_EXPR_DELTA,
+                parameters=(SYM_ALPHA, SYM_BETA),
+                values={SYM_X: measured_vals_x, SYM_Y: measured_vals_y},
+                err_stds={SYM_X: err_std_x, SYM_Y: err_std_y}
+            )
 
-                print('MRT a:         {}'.format(mrt_a))
-                print('MRT alpha:     {}'.format(mrt_alpha))
-            
-                # add distance between estimates and real values
-                cur_mrt_dst = (mrt_a - REAL_A)**2 + (mrt_alpha - REAL_ALPHA)**2
-                cur_mrt_acc += math.sqrt(cur_mrt_dst)
+            # increase number of successful iterations
+            mrt_num_success_iter += 1
+            # print('MRT alpha:    {}'.format(mrt_alpha))
+            # print('MRT beta:     {}'.format(mrt_beta))
+            mrt_acc = accuracy.avg_euclidean_dst(
+                np.array(((PRECISE_ALPHA), (PRECISE_BETA))),
+                np.array(((mrt_alpha), (mrt_beta))))
+            mrt_accs[std_i, std_j] += mrt_acc
 
-            except (TypeError, SympifyError):
-                # If got complex estimate, pass it
-                print("Got complex estimates. Skip it...")
-            else:
-               # increase number of successfull iterations
-                mrt_num_success_iter += 1
+basic_accs /= NUM_ITER
+lse_accs /= NUM_ITER
+mrt_accs /= NUM_ITER
 
-            print('-' * 40, '\n')
-
-        print('Basic accuracy:         {}'.format(cur_basic_acc))
-        print('Successfull iterations: {}\n'.format(basic_num_success_iter))
-
-        print('MNK accuracy:           {}'.format(cur_mnk_acc))
-        print('Successfull iterations: {}\n'.format(mnk_num_success_iter))
-
-        print('MRT accuracy:           {}'.format(cur_mrt_acc))
-        print('Successfull iterations: {}\n'.format(mrt_num_success_iter))
-
-        print('#' * 40, '\n')
-
-        # append average accuracy to row accuracies
-        avg_basic_accs = 0
-        if basic_num_success_iter > 0:
-            avg_basic_accs = cur_basic_acc / basic_num_success_iter
-        row_basic_accs.append(avg_basic_accs)
-
-        avg_mnk_accs = 0
-        if mnk_num_success_iter > 0:
-            avg_mnk_accs = cur_mnk_acc / mnk_num_success_iter
-        row_mnk_accs.append(avg_mnk_accs)
-
-        avg_mrt_accs = 0
-        if mrt_num_success_iter > 0:
-            avg_mrt_accs = cur_mrt_acc / mrt_num_success_iter
-        row_mrt_accs.append(avg_mrt_accs)
-
-    # append row accuracies to accumulator
-    basic_accs.append(row_basic_accs)
-    mnk_accs.append(row_mnk_accs)
-    mrt_accs.append(row_mrt_accs)
-
-# convert to numpy array
-basic_accs = np.array(basic_accs)
-mnk_accs = np.array(mnk_accs)
-mrt_accs = np.array(mrt_accs)
-
-# print(err_x_stds)
-# print(err_y_stds)
-# print(basic_accs)
-# print(mnk_accs)
-# print(mrt_accs)
-
-basic_fig = plt.figure(0)
-basic_ax = basic_fig.gca(projection='3d')
-basic_ax.view_init(elev=15., azim=240)
-basic_ax.set_xlabel('$ \\sigma_x $')
-basic_ax.set_ylabel('$ \\sigma_y $')
-basic_ax.set_zlabel('$ \\rho $')
-basic_accs_surf = basic_ax.plot_surface(
-    err_x_stds, err_y_stds, basic_accs,
-    rstride=1, cstride=1,
-    cmap=cm.coolwarm,
-    label='MPT'
-)
-basic_ax.zaxis.set_major_locator(LinearLocator(10))
-basic_ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-basic_ax.set_zlim(0, 6)
-
-
-mnk_fig = plt.figure(1)
-mnk_ax = mnk_fig.gca(projection='3d')
-mnk_ax.view_init(elev=15., azim=240)
-mnk_ax.set_xlabel('$ \\sigma_x $')
-mnk_ax.set_ylabel('$ \\sigma_y $')
-mnk_ax.set_zlabel('$ \\rho $')
-mnk_accs_surf = mnk_ax.plot_surface(
-    err_x_stds, err_y_stds, mnk_accs,
-    rstride=1, cstride=1,
-    cmap=cm.coolwarm,
-    label='MHK({})'.format(MNK_NUM_ITER)
-)
-mnk_ax.zaxis.set_major_locator(LinearLocator(10))
-mnk_ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-mnk_ax.set_zlim(0, 6)
-
-
-mrt_fig = plt.figure(2)
-mrt_ax = mrt_fig.gca(projection='3d')
-mrt_ax.view_init(elev=15., azim=240)
-mrt_ax.set_xlabel('$ \\sigma_x $')
-mrt_ax.set_ylabel('$ \\sigma_y $')
-mrt_ax.set_zlabel('$ \\rho $')
-mrt_accs_surf = mrt_ax.plot_surface(
-    err_x_stds, err_y_stds, mrt_accs,
-    rstride=1, cstride=1,
-    cmap=cm.coolwarm,
-    label='MPT'
-)
-mrt_ax.zaxis.set_major_locator(LinearLocator(10))
-mrt_ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-mrt_ax.set_zlim(0, 6)
-
-if args.write_to:
-    file_name, file_ext = os.path.splitext(args.write_to)
-
-    plt.figure(0)
-    plt.savefig('{}_basic{}'.format(file_name, file_ext),
-                dpi=200)
-    
-    plt.figure(1)
-    plt.savefig('{}_mnk{}'.format(file_name, file_ext),
-                dpi=200)
-
-    plt.figure(2)
-    plt.savefig('{}_mrt{}'.format(file_name, file_ext),
-                dpi=200)
-
-plt.show()
+np.save(
+    '{}_err-stds-x.npy'.format(output_path),
+    err_stds_x)
+np.save(
+    '{}_err-stds-y.npy'.format(output_path),
+    err_stds_y)
+np.save(
+    '{}_basic-accs.npy'.format(output_path),
+    basic_accs)
+np.save(
+    '{}_lse-accs.npy'.format(output_path),
+    lse_accs)
+np.save(
+    '{}_mrt-accs.npy'.format(output_path),
+    mrt_accs)

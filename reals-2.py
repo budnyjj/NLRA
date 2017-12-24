@@ -24,12 +24,12 @@ SYM_A, SYM_ALPHA = SYM_PARAMS = sp.symbols('a alpha')
 # SYM_EXPR = sp.sympify('a * exp(-alpha*x)')
 # SYM_EXPR_DELTA = sp.sympify('y - a * exp(-alpha*x)')
 
-SYM_EXPR = sp.sympify('a * exp(alpha*x)')
-SYM_EXPR_DELTA = sp.sympify('y - a * exp(alpha*x)')
+# SYM_EXPR = sp.sympify('a * exp(alpha*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - a * exp(alpha*x)')
 
 # linear function
-# SYM_EXPR = sp.sympify('a + alpha*x')
-# SYM_EXPR_DELTA = sp.sympify('y - a - alpha*x')
+SYM_EXPR = sp.sympify('a + alpha*x')
+SYM_EXPR_DELTA = sp.sympify('y - a - alpha*x')
 
 # quadratic function
 # SYM_EXPR = sp.sympify('a*(x**2) + alpha*x')
@@ -44,19 +44,19 @@ SYM_EXPR_DELTA = sp.sympify('y - a * exp(alpha*x)')
 # SYM_EXPR_DELTA = sp.sympify('y - (a + alpha*sin(x))')
 
 MIN_X = 0
-MAX_X = 7
-NUM_VALS = 14              # number of source values
+MAX_X = 10
+NUM_VALS = 20              # number of source values
 
-REAL_A = 31                # real 'a' value of source distribution
-REAL_ALPHA = 0.5           # real 'alpha' value of source distiribution
+REAL_A = 31                 # real 'a' value of source distribution
+REAL_ALPHA = 100             # real 'alpha' value of source distiribution
 
 ERR_X_AVG = 0              # average of X error values
-ERR_X_STD = 0.1              # std of X error values
+ERR_X_STD = 0.101          # std of X error values
 
 ERR_Y_AVG = 0              # average of Y error values
-ERR_Y_STD = 10             # std of Y error values
+ERR_Y_STD = 10.1           # std of Y error values
 
-NUM_ITER = 10             # number of realizations
+NUM_ITER = 10              # number of realizations
 
 MNK_NUM_ITER = 1           # number of MNK iterations
 
@@ -149,9 +149,9 @@ for iter_i in range(NUM_ITER):
 
     # set base values as max distant values
     base_values = base_values_max_dist
-    
+
     print("Base values: {}\n".format(base_values))
-    
+
     ################
     # Basic search #
     ################
@@ -162,7 +162,7 @@ for iter_i in range(NUM_ITER):
         parameters=(SYM_A, SYM_ALPHA),
         values=base_values
     )
-    
+
     basic_y = np.vectorize(
         sp.lambdify(
             SYM_X,
@@ -264,7 +264,7 @@ if args.write_to:
     plt.figure(0)
     plt.savefig('{}_values{}'.format(file_name, file_ext),
                 dpi=100)
-    
+
     plt.figure(1)
     plt.savefig('{}_basic{}'.format(file_name, file_ext),
                 dpi=100)
