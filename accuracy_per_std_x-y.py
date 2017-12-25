@@ -23,20 +23,25 @@ SYM_ALPHA, SYM_BETA = SYM_PARAMS = sp.symbols('a b')
 # SYM_EXPR = sp.sympify('a * exp(-alpha*x)')
 # SYM_EXPR_DELTA = sp.sympify('y - a * exp(-alpha*x)')
 
-# SYM_EXPR = sp.sympify('a * exp(alpha*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - a * exp(alpha*x)')
-
 # linear function
-SYM_EXPR = sp.sympify('a + b*x')
-SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
+# SYM_EXPR = sp.sympify('a + b*x')
+# SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
 
 # quadratic function
-# SYM_EXPR = sp.sympify('a*(x**2) + alpha*x')
-# SYM_EXPR_DELTA = sp.sympify('y - a*(x**2) - alpha*x')
+SYM_EXPR = sp.sympify('a*x + b*(x**2)')
+SYM_EXPR_DELTA = sp.sympify('y - a*x - b*(x**2)')
+
+# cubic function
+# SYM_EXPR = sp.sympify('a*(x**2) + b*(x**3)')
+# SYM_EXPR_DELTA = sp.sympify('y - b*(x**3) - a*(x**2)')
 
 # logarithmic function
 # SYM_EXPR = sp.sympify('a + alpha*log(x)')
 # SYM_EXPR_DELTA = sp.sympify('y - a - alpha*log(x)')
+
+# exponential function
+# SYM_EXPR = sp.sympify('a * exp(b*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - a * exp(b*x)')
 
 # sinusoidal function
 # SYM_EXPR = sp.sympify('a + alpha*sin(x)')
@@ -47,20 +52,20 @@ MAX_X = 10
 NUM_VALS = 100          # number of source values
 
 PRECISE_ALPHA = 0       # real 'alpha' value of source distribution
-PRECISE_BETA = 1        # real 'beta' value of source distiribution
+PRECISE_BETA = -5       # real 'beta' value of source distiribution
 
-ERR_NUM_STD_ITER = 20  # number of stds iterations
+ERR_NUM_STD_ITER = 20   # number of stds iterations
 
-ERR_MIN_STD_X = 0.001  # minimal std of X error values
-ERR_MAX_STD_X = 2.001  # maximal std of X error values
+ERR_MIN_STD_X = 0.001   # minimal std of X error values
+ERR_MAX_STD_X = 2.001   # maximal std of X error values
 ERR_STEP_STD_X = (ERR_MAX_STD_X - ERR_MIN_STD_X) / ERR_NUM_STD_ITER
 
-ERR_MIN_STD_Y = 0.001  # minimal std of Y error values
-ERR_MAX_STD_Y = 2.001  # maximal std of Y error values
+ERR_MIN_STD_Y = 0.001   # minimal std of Y error values
+ERR_MAX_STD_Y = 2.001   # maximal std of Y error values
 ERR_STEP_STD_Y = (ERR_MAX_STD_Y - ERR_MIN_STD_Y) / ERR_NUM_STD_ITER
 
-NUM_ITER = 100         # number of realizations
-LSE_NUM_ITER = 1       # number of LSE iterations
+NUM_ITER = 100          # number of realizations
+LSE_NUM_ITER = 1        # number of LSE iterations
 
 ################
 # Program code #
@@ -119,11 +124,6 @@ for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
         print("Iteration {}/{}: std X: {:.2f}, std Y: {:.2f}".format(
               std_iter, num_std_iter, err_std_x, err_std_y))
 
-        # number of successful iterations
-        basic_num_success_iter = 0
-        lse_num_success_iter = 0
-        mrt_num_success_iter = 0
-
         # iterate by error standart derivation values
         for iter_i in range(NUM_ITER):
             measured_vals_x, measured_vals_y = estimators.uniform(
@@ -177,8 +177,8 @@ for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
                 parameters=(SYM_ALPHA, SYM_BETA),
                 values=base_values
             )
-            # increase number of successful iterations
-            basic_num_success_iter += 1
+            # print('Basic alpha: {}'.format(basic_alpha))
+            # print('Basic beta:  {}'.format(basic_beta))
             # add distance between estimates and real values
             basic_acc = accuracy.avg_euclidean_dst(
                 np.array(((PRECISE_ALPHA), (PRECISE_BETA))),
@@ -189,18 +189,13 @@ for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
             # LSE search #
             ##############
             # use basic estimates as init estimates for LSE
-            lse_alpha = lse_beta = None
-            for i, (lse_alpha_iter, lse_beta_iter) in methods.search_lse(
+            lse_alpha, lse_beta = methods.search_lse(
                     expression=SYM_EXPR,
                     parameters=(SYM_ALPHA, SYM_BETA),
                     values={SYM_X: measured_vals_x},
                     result_values={SYM_Y: measured_vals_y},
                     init_estimates={SYM_ALPHA: basic_alpha, SYM_BETA: basic_beta},
-                    num_iter=LSE_NUM_ITER
-            ):
-                lse_alpha, lse_beta = lse_alpha_iter, lse_beta_iter
-            # increase number of successfull iterations
-            lse_num_success_iter += 1
+                    num_iter=LSE_NUM_ITER)
             # print('LSE({}) alpha: {}'.format(LSE_NUM_ITER, lse_alpha))
             # print('LSE({}) beta:  {}'.format(LSE_NUM_ITER, lse_beta))
             lse_acc = accuracy.avg_euclidean_dst(
@@ -218,9 +213,6 @@ for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
                 values={SYM_X: measured_vals_x, SYM_Y: measured_vals_y},
                 err_stds={SYM_X: err_std_x, SYM_Y: err_std_y}
             )
-
-            # increase number of successful iterations
-            mrt_num_success_iter += 1
             # print('MRT alpha:    {}'.format(mrt_alpha))
             # print('MRT beta:     {}'.format(mrt_beta))
             mrt_acc = accuracy.avg_euclidean_dst(
@@ -238,9 +230,6 @@ np.save(
 np.save(
     '{}_err-stds-y.npy'.format(output_path),
     err_stds_y)
-np.save(
-    '{}_basic-accs.npy'.format(output_path),
-    basic_accs)
 np.save(
     '{}_lse-accs.npy'.format(output_path),
     lse_accs)

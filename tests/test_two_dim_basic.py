@@ -42,7 +42,7 @@ class TestBasicSearch(unittest.TestCase):
             )
         )(x)
 
-        half_len = self.num_vals / 2
+        half_len = int(self.num_vals / 2)
 
         # get base values as half-distant pairs of values
         base_values_dist = {
@@ -87,7 +87,7 @@ class TestBasicSearch(unittest.TestCase):
             )
         )(x)
 
-        half_len = self.num_vals / 2
+        half_len = int(self.num_vals / 2)
 
         # get base values as half-distant pairs of values
         base_values_dist = {
@@ -132,7 +132,7 @@ class TestBasicSearch(unittest.TestCase):
             )
         )(x)
 
-        half_len = self.num_vals / 2
+        half_len = int(self.num_vals / 2)
 
         # get base values as half-distant pairs of values
         base_values_dist = {

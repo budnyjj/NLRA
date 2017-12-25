@@ -101,7 +101,7 @@ for iter_i in range(NUM_ITER):
         lambda v: v + random.gauss(ERR_X_AVG, ERR_X_STD)
     )(real_x)
 
-    half_len = len(x) / 2
+    half_len = len(x) // 2
 
     # add Y errors with current normal distribution
     y = np.vectorize(
@@ -190,7 +190,7 @@ for iter_i in range(NUM_ITER):
     ##############
 
     # use basic estimates as init estimates for MNK
-    for i, (mnk_a, mnk_alpha) in methods.search_mnk(
+    for i, (mnk_a, mnk_alpha) in methods.search_lse2(
             expression=SYM_EXPR,
             parameters=(SYM_A, SYM_ALPHA),
             values={SYM_X: x},

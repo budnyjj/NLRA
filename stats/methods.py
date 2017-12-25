@@ -3,14 +3,66 @@ import math
 import sympy as sp
 import numpy as np
 
-from util.profilehooks import profile
-
 ###########
 # Helpers #
 ###########
 
+# Caches results of symbolical equation solving
+__CACHE_SOLUTIONS = {}
+# Caches result of symbolic parameter substitutions
+__CACHE_SUBSTITUTIONS = {}
 
-def gen_equations(delta_expression, values, num_params):
+def __solve(f, parameters):
+    """Return result of symbolic equation solving.
+
+    Parameters:
+        f --- tuple of sympy equations to solve
+
+        parameters --- tuple of sympy parameters of equation
+
+    Return:
+        solution --- first sympy solution of equation
+
+    """
+    key_solution = (f, parameters)
+    solution = None
+    try:
+        solution = __CACHE_SOLUTIONS[key_solution]
+    except KeyError:
+        solution = sp.solve(f, parameters, dict=True)
+        __CACHE_SOLUTIONS[key_solution] = solution
+    if type(solution) is list:
+        # get only first solution
+        solution = solution[0]
+    return solution
+
+def __subs(sym_f, subs):
+    """
+    Computes values of function by value substitution.
+
+    Parameters:
+        sym_f --- symbolic function to evaluate, for example:
+        (y0 - y1)/(x0 - x1)
+
+        subs --- dict of symbolic/numeric substitutions, for example:
+        {x0: 8.9882534228582163, y0: 8.9868654253346634, x1: 9.3128376287378849, y1: 9.314557492970053}
+
+    Return:
+        val_f --- function value as the result of numeric parameter substitutions
+    """
+
+    sym_subs, val_subs = tuple(subs.keys()), subs.values()
+    key_sub = (sym_f, sym_subs)
+    f = None
+    try:
+        f = __CACHE_SUBSTITUTIONS[key_sub]
+    except KeyError:
+        f = sp.lambdify(sym_subs, sym_f, modules='numpy')
+        __CACHE_SUBSTITUTIONS[key_sub] = f
+    val_f = f(*val_subs)
+    return val_f
+
+def __gen_equations(delta_expression, values, num_params):
     """Return system of equations from delta_expression for every parameter and
     list of symbolic substitutions for each equation.
 
@@ -43,16 +95,13 @@ def gen_equations(delta_expression, values, num_params):
         # for each equation
         subs = {}
         for sym_value in values:
-            subs[sym_value] = sp.Symbol(
-                str(sym_value) + str(param_i)
-            )
+            subs[sym_value] = sp.Symbol('{}{}'.format(sym_value, param_i))
         f.append(delta_expression.subs(subs))
         f_subs.append(subs)
 
-    return f, f_subs
+    return tuple(f), tuple(f_subs)
 
-
-def gen_subs(f_subs, values):
+def __gen_subs(f_subs, values):
     """Generate dicts of substitutions of f_subs symbolic variables by
     corresponding values, with equal distance between them.
 
@@ -114,27 +163,23 @@ def search_basic(delta_expression, parameters, values):
     # number of parameters
     num_params = len(parameters)
 
-    f, f_subs = gen_equations(delta_expression, values, num_params)
+    f, f_subs = __gen_equations(delta_expression, values, num_params)
 
     # symbolic expressions of parameters
-    sym_expr_params = sp.solve(f, parameters, dict=True)
-    if type(sym_expr_params) is list:
-        # get only first solution
-        sym_expr_params = sym_expr_params[0]
+    sym_expr_params = __solve(f, parameters)
 
     estimates = np.zeros(num_params)
 
     # executes only once
-    for subs in gen_subs(f_subs, values):
-        for param_i, param in enumerate(parameters):
-            estimates[param_i] = sym_expr_params[param].subs(subs)
+    for subs in __gen_subs(f_subs, values):
+        for i_param, sym_param in enumerate(parameters):
+            estimates[i_param] = __subs(sym_expr_params[sym_param], subs)
 
     return estimates
 
-
-def search_lse(expression, parameters, values,
-               result_values, init_estimates,
-               err_stds=None, num_iter=1):
+def search_lse2(expression, parameters, values,
+                result_values, init_estimates,
+                err_stds=None, num_iter=1):
     """Search estimates of ditribution parameters with LSE method.
 
     Parameters:
@@ -230,8 +275,11 @@ def search_lse(expression, parameters, values,
         # yield first row
         yield i + 1, cur_estimates.T[0]
 
-# Caches symbolic expressions of parameters of specified delta expression
-# mrt_cache_sym_expr_params = {}
+def search_lse(*args, **kwargs):
+    estimates = None
+    for _, it_estimates in search_lse2(*args, **kwargs):
+        estimates = it_estimates
+    return estimates
 
 def search_mrt(delta_expression, parameters, values, err_stds):
     """Search estimates by Taylor method.
@@ -262,20 +310,10 @@ def search_mrt(delta_expression, parameters, values, err_stds):
     # number of symbolic values
     num_sym_vals = int(len(sym_vals))
 
-    f, f_subs = gen_equations(delta_expression, values, num_params)
+    f, f_subs = __gen_equations(delta_expression, values, num_params)
 
     # symbolic expressions of parameters
-    sym_expr_params = sp.solve(f, parameters, dict=True)
-    # key_sym_expr_params = '{}, {}'.format(f, parameters)
-    # sym_expr_params = None
-    # try:
-    #     sym_expr_params = mrt_cache_sym_expr_params[key_sym_expr_params]
-    # except KeyError:
-    #     sym_expr_params = sp.solve(f, parameters, dict=True)
-    #     mrt_cache_sym_expr_params[key_sym_expr_params] = sym_expr_params
-    if type(sym_expr_params) is list:
-        # get only first solution
-        sym_expr_params = sym_expr_params[0]
+    sym_expr_params = __solve(f, parameters)
 
     # matrix of symbolic derivatives
     sym_G = []
@@ -308,12 +346,12 @@ def search_mrt(delta_expression, parameters, values, err_stds):
     sum_R_inv_theta = np.zeros(num_params)
 
     # replace symbolic values of f_subs with real values
-    for val_subs in gen_subs(f_subs, values):
+    for val_subs in __gen_subs(f_subs, values):
         # TODO: optimize
         G = np.zeros((len(sym_G), len(sym_G[0])))
         for i, sym_g_row in enumerate(sym_G):
             for j, sym_diff in enumerate(sym_g_row):
-                G[i, j] = sym_diff.subs(val_subs)
+                G[i, j] = __subs(sym_diff, val_subs)
 
         R = np.dot(np.dot(G, R_err), G.T)
 
@@ -323,8 +361,8 @@ def search_mrt(delta_expression, parameters, values, err_stds):
 
         # substitute values into sym_expr_param to get theta
         theta = np.zeros((num_params, 1))
-        for i, parameter in enumerate(parameters):
-            theta[i, 0] = sym_expr_params[parameter].subs(val_subs)
+        for (i_param, param) in enumerate(parameters):
+            theta[i_param, 0] = __subs(sym_expr_params[param], val_subs)
 
         R_inv_theta = np.dot(R_inv, theta)
         sum_R_inv_theta = sum_R_inv_theta + R_inv_theta

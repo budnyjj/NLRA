@@ -44,12 +44,12 @@ class TestBasicSearch(unittest.TestCase):
             )
         )(x)
 
-        third_len = self.num_vals / 3
+        third_len = self.num_vals // 3
 
         # get base values as half-distant pairs of values
         base_values_dist = {
-            sym_x: [x[0], x[third_len], x[third_len * 2]],
-            sym_y: [y[0], y[third_len], y[third_len * 2]]
+            sym_x: (x[0], x[third_len], x[third_len * 2]),
+            sym_y: (y[0], y[third_len], y[third_len * 2])
         }
 
         # find params with basic method

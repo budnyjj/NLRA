@@ -1,6 +1,9 @@
 import unittest
+
+import random
 import sympy as sp
 import numpy as np
+
 
 import sys
 import os
@@ -10,7 +13,7 @@ import stats.methods as methods
 from stats.utils import *
 
 
-class TestBasicSearch(unittest.TestCase):
+class TestBasicMrt(unittest.TestCase):
 
     def setUp(self):
         self.num_vals = 20          # number of source values
@@ -26,12 +29,15 @@ class TestBasicSearch(unittest.TestCase):
 
         real_k = 2             # real 'k' value of source distribution
 
+        err_y_avg = 0          # average of Y error values
+        err_y_std = 0.01       # std of Y error values
+
         # real X values without errors
         x = np.linspace(min_x, max_x,
                         self.num_vals, dtype=np.float)
 
         # real Y values without errors
-        y = np.vectorize(
+        real_y = np.vectorize(
             sp.lambdify(
                 sym_x,
                 sym_expr.subs(
@@ -41,20 +47,28 @@ class TestBasicSearch(unittest.TestCase):
             )
         )(x)
 
-        # get base values as half-distant pairs of values
-        base_values_dist = {
-            sym_x: (x[0],),
-            sym_y: (y[0],)
-        }
+        # add Y errors with current normal distribution
+        y = np.vectorize(
+            lambda v: v + random.gauss(err_y_avg, err_y_std)
+        )(real_y)
 
-        # find params with basic method
-        basic_k = methods.search_basic(
+        # find params with mrt method
+        mrt_k = methods.search_mrt(
             delta_expression=sym_expr_delta,
             parameters=(sym_k,),
-            values=base_values_dist
+            values={sym_x: x, sym_y: y},
+            err_stds={sym_x: 0, sym_y: err_y_std}
         )
 
-        self.assertAlmostEqual(real_k, basic_k, places=5)
+        mrt_y = np.vectorize(
+            sp.lambdify(
+                sym_x,
+                sym_expr.subs({sym_k: mrt_k}),
+                'numpy'
+            )
+        )(x)
+
+        self.assertAlmostEqual(real_k, mrt_k[0], places=1)
 
     def test_linear_b(self):
         sym_x, sym_y = sp.symbols('x y')
@@ -67,12 +81,15 @@ class TestBasicSearch(unittest.TestCase):
 
         real_b = 2             # real 'b' value of source distribution
 
+        err_y_avg = 0          # average of Y error values
+        err_y_std = 0.01       # std of Y error values
+
         # real X values without errors
         x = np.linspace(min_x, max_x,
                         self.num_vals, dtype=np.float)
 
         # real Y values without errors
-        y = np.vectorize(
+        real_y = np.vectorize(
             sp.lambdify(
                 sym_x,
                 sym_expr.subs(
@@ -82,20 +99,28 @@ class TestBasicSearch(unittest.TestCase):
             )
         )(x)
 
-        # get base values as half-distant pairs of values
-        base_values_dist = {
-            sym_x: (x[0],),
-            sym_y: (y[0],)
-        }
+        # add Y errors with current normal distribution
+        y = np.vectorize(
+            lambda v: v + random.gauss(err_y_avg, err_y_std)
+        )(real_y)
 
-        # find params with basic method
-        basic_b = methods.search_basic(
+        # find params with mrt method
+        mrt_b = methods.search_mrt(
             delta_expression=sym_expr_delta,
             parameters=(sym_b,),
-            values=base_values_dist
+            values={sym_x: x, sym_y: y},
+            err_stds={sym_x: 0, sym_y: err_y_std}
         )
 
-        self.assertAlmostEqual(real_b, basic_b, places=5)
+        mrt_y = np.vectorize(
+            sp.lambdify(
+                sym_x,
+                sym_expr.subs({sym_b: mrt_b}),
+                'numpy'
+            )
+        )(x)
+
+        self.assertAlmostEqual(real_b, mrt_b[0], places=1)
 
     def test_exponential(self):
         sym_x, sym_y = sp.symbols('x y')
@@ -106,14 +131,17 @@ class TestBasicSearch(unittest.TestCase):
         min_x = 1
         max_x = 20
 
-        real_a = 2             # real 'k' value of source distribution
+        real_a = 10            # real 'a' value of source distribution
+
+        err_y_avg = 0          # average of Y error values
+        err_y_std = 0.01       # std of Y error values
 
         # real X values without errors
         x = np.linspace(min_x, max_x,
                         self.num_vals, dtype=np.float)
 
         # real Y values without errors
-        y = np.vectorize(
+        real_y = np.vectorize(
             sp.lambdify(
                 sym_x,
                 sym_expr.subs(
@@ -123,20 +151,28 @@ class TestBasicSearch(unittest.TestCase):
             )
         )(x)
 
-        # get base values as half-distant pairs of values
-        base_values_dist = {
-            sym_x: (x[0],),
-            sym_y: (y[0],)
-        }
+        # add Y errors with current normal distribution
+        y = np.vectorize(
+            lambda v: v + random.gauss(err_y_avg, err_y_std)
+        )(real_y)
 
-        # find params with basic method
-        basic_a = methods.search_basic(
+        # find params with mrt method
+        mrt_a = methods.search_mrt(
             delta_expression=sym_expr_delta,
             parameters=(sym_a,),
-            values=base_values_dist
+            values={sym_x: x, sym_y: y},
+            err_stds={sym_x: 0, sym_y: err_y_std}
         )
 
-        self.assertAlmostEqual(real_a, basic_a, places=5)
+        mrt_y = np.vectorize(
+            sp.lambdify(
+                sym_x,
+                sym_expr.subs({sym_a: mrt_a}),
+                'numpy'
+            )
+        )(x)
+
+        self.assertAlmostEqual(real_a, mrt_a[0], places=1)
 
     def test_sinusoidal(self):
         sym_x, sym_y = sp.symbols('x y')
@@ -147,14 +183,17 @@ class TestBasicSearch(unittest.TestCase):
         min_x = 1
         max_x = 20
 
-        real_a = 2             # real 'k' value of source distribution
+        real_a = 2             # real 'a' value of source distribution
+
+        err_y_avg = 0          # average of Y error values
+        err_y_std = 0.01       # std of Y error values
 
         # real X values without errors
         x = np.linspace(min_x, max_x,
                         self.num_vals, dtype=np.float)
 
         # real Y values without errors
-        y = np.vectorize(
+        real_y = np.vectorize(
             sp.lambdify(
                 sym_x,
                 sym_expr.subs(
@@ -164,17 +203,25 @@ class TestBasicSearch(unittest.TestCase):
             )
         )(x)
 
-        # get base values as half-distant pairs of values
-        base_values_dist = {
-            sym_x: (x[0],),
-            sym_y: (y[0],)
-        }
+        # add Y errors with current normal distribution
+        y = np.vectorize(
+            lambda v: v + random.gauss(err_y_avg, err_y_std)
+        )(real_y)
 
-        # find params with basic method
-        basic_a = methods.search_basic(
+        # find params with mrt method
+        mrt_a = methods.search_mrt(
             delta_expression=sym_expr_delta,
             parameters=(sym_a,),
-            values=base_values_dist
+            values={sym_x: x, sym_y: y},
+            err_stds={sym_x: 0, sym_y: err_y_std}
         )
 
-        self.assertAlmostEqual(real_a, basic_a, places=5)
+        mrt_y = np.vectorize(
+            sp.lambdify(
+                sym_x,
+                sym_expr.subs({sym_a: mrt_a}),
+                'numpy'
+            )
+        )(x)
+
+        self.assertAlmostEqual(real_a, mrt_a[0], places=1)
