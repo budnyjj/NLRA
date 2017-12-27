@@ -36,8 +36,8 @@ SYM_ALPHA, SYM_BETA = SYM_PARAMS = sp.symbols('a b')
 # SYM_EXPR_DELTA = sp.sympify('y - b*(x**3) - a*(x**2)')
 
 # hyperbolic function
-SYM_EXPR = sp.sympify('a + 1/(b*x)')
-SYM_EXPR_DELTA = sp.sympify('y - a - 1/(b*x)')
+SYM_EXPR = sp.sympify('a + 1/(b*(x+1))')
+SYM_EXPR_DELTA = sp.sympify('y - a - 1/(b*(x+1))')
 
 # logarithmic function
 # SYM_EXPR = sp.sympify('a + alpha*log(x)')
@@ -51,8 +51,8 @@ SYM_EXPR_DELTA = sp.sympify('y - a - 1/(b*x)')
 # SYM_EXPR = sp.sympify('a + b*sin(0.2*x)')
 # SYM_EXPR_DELTA = sp.sympify('y - (a + b*sin(0.2*x))')
 
-MIN_X = 0.0001
-MAX_X = 10.0001
+MIN_X = 0
+MAX_X = 10
 NUM_VALS = 100          # number of source values
 
 PRECISE_ALPHA = 0       # real 'alpha' value of source distribution

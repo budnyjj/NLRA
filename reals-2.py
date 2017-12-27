@@ -36,8 +36,8 @@ SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
 # SYM_EXPR_DELTA = sp.sympify('y - a*(x**2) - b*x')
 
 # hyperbolic function
-SYM_EXPR = sp.sympify('1/(b*(x+a))')
-SYM_EXPR_DELTA = sp.sympify('y - 1/(b*(x+a))')
+SYM_EXPR = sp.sympify('a + 1/(b*(x+1))')
+SYM_EXPR_DELTA = sp.sympify('y - a - 1/(b*(x+1))')
 
 # logarithmic function
 # SYM_EXPR = sp.sympify('a + b*log(x)')
@@ -52,7 +52,7 @@ MAX_X = 10
 NUM_VALS = 20              # number of source values
 
 REAL_A = 1                 # real 'a' value of source distribution
-REAL_B = 0.0001            # real 'b' value of source distiribution
+REAL_B = 1                 # real 'b' value of source distiribution
 
 ERR_X_AVG = 0              # average of X error values
 ERR_X_STD = 0.1            # std of X error values
