@@ -19,42 +19,46 @@ from stats.utils import *
 ################
 
 SYM_X, SYM_Y = SYM_VALUES = sp.symbols('x y')
-SYM_A, SYM_ALPHA = SYM_PARAMS = sp.symbols('a alpha')
+SYM_A, SYM_B = SYM_PARAMS = sp.symbols('a b')
 
-# SYM_EXPR = sp.sympify('a * exp(-alpha*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - a * exp(-alpha*x)')
+# SYM_EXPR = sp.sympify('a * exp(-b*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - a * exp(-b*x)')
 
-# SYM_EXPR = sp.sympify('a * exp(alpha*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - a * exp(alpha*x)')
+# SYM_EXPR = sp.sympify('a * exp(b*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - a * exp(b*x)')
 
 # linear function
-SYM_EXPR = sp.sympify('a + alpha*x')
-SYM_EXPR_DELTA = sp.sympify('y - a - alpha*x')
+SYM_EXPR = sp.sympify('a + b*x')
+SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
 
 # quadratic function
-# SYM_EXPR = sp.sympify('a*(x**2) + alpha*x')
-# SYM_EXPR_DELTA = sp.sympify('y - a*(x**2) - alpha*x')
+# SYM_EXPR = sp.sympify('a*(x**2) + b*x')
+# SYM_EXPR_DELTA = sp.sympify('y - a*(x**2) - b*x')
+
+# hyperbolic function
+SYM_EXPR = sp.sympify('1/(b*(x+a))')
+SYM_EXPR_DELTA = sp.sympify('y - 1/(b*(x+a))')
 
 # logarithmic function
-# SYM_EXPR = sp.sympify('a + alpha*log(x)')
-# SYM_EXPR_DELTA = sp.sympify('y - a - alpha*log(x)')
+# SYM_EXPR = sp.sympify('a + b*log(x)')
+# SYM_EXPR_DELTA = sp.sympify('y - a - b*log(x)')
 
 # sinusoidal function
-# SYM_EXPR = sp.sympify('a + alpha*sin(x)')
-# SYM_EXPR_DELTA = sp.sympify('y - (a + alpha*sin(x))')
+# SYM_EXPR = sp.sympify('a + b*sin(x)')
+# SYM_EXPR_DELTA = sp.sympify('y - (a + b*sin(x))')
 
 MIN_X = 0
 MAX_X = 10
 NUM_VALS = 20              # number of source values
 
-REAL_A = 31                 # real 'a' value of source distribution
-REAL_ALPHA = 100             # real 'alpha' value of source distiribution
+REAL_A = 1                 # real 'a' value of source distribution
+REAL_B = 0.0001            # real 'b' value of source distiribution
 
 ERR_X_AVG = 0              # average of X error values
-ERR_X_STD = 0.101          # std of X error values
+ERR_X_STD = 0.1            # std of X error values
 
 ERR_Y_AVG = 0              # average of Y error values
-ERR_Y_STD = 10.1           # std of Y error values
+ERR_Y_STD = 0.1            # std of Y error values
 
 NUM_ITER = 10              # number of realizations
 
@@ -79,14 +83,14 @@ real_x = np.linspace(MIN_X, MAX_X, NUM_VALS, dtype=np.float)
 real_y = np.vectorize(
     sp.lambdify(
         SYM_X,
-        SYM_EXPR.subs({SYM_A: REAL_A, SYM_ALPHA: REAL_ALPHA}),
+        SYM_EXPR.subs({SYM_A: REAL_A, SYM_B: REAL_B}),
         'numpy'
     )
 )(real_x)
 
 print('Expression:    {}'.format(SYM_EXPR))
 print('Real A:        {}'.format(REAL_A))
-print('Real ALPHA:    {}'.format(REAL_ALPHA))
+print('Real B:    {}'.format(REAL_B))
 print('Error X std:   {}'.format(ERR_X_STD))
 print('Error Y std:   {}'.format(ERR_Y_STD))
 print('Number of iterations: {}'.format(NUM_ITER))
@@ -157,16 +161,16 @@ for iter_i in range(NUM_ITER):
     ################
 
     # find params with basic method
-    basic_a, basic_alpha = methods.search_basic(
+    basic_a, basic_b = methods.search_basic(
         delta_expression=SYM_EXPR_DELTA,
-        parameters=(SYM_A, SYM_ALPHA),
+        parameters=(SYM_A, SYM_B),
         values=base_values
     )
 
     basic_y = np.vectorize(
         sp.lambdify(
             SYM_X,
-            SYM_EXPR.subs({SYM_A: basic_a, SYM_ALPHA: basic_alpha}),
+            SYM_EXPR.subs({SYM_A: basic_a, SYM_B: basic_b}),
             'numpy'
         )
     )(real_x)
@@ -175,7 +179,7 @@ for iter_i in range(NUM_ITER):
     basic_std = std(basic_y, real_y)
 
     print('Basic a:       {}'.format(basic_a))
-    print('Basic alpha:   {}'.format(basic_alpha))
+    print('Basic b:   {}'.format(basic_b))
     print('Dispersion:    {}'.format(basic_disp))
     print('Std:           {}\n'.format(basic_std))
 
@@ -190,19 +194,19 @@ for iter_i in range(NUM_ITER):
     ##############
 
     # use basic estimates as init estimates for MNK
-    for i, (mnk_a, mnk_alpha) in methods.search_lse2(
+    for i, (mnk_a, mnk_b) in methods.search_lse2(
             expression=SYM_EXPR,
-            parameters=(SYM_A, SYM_ALPHA),
+            parameters=(SYM_A, SYM_B),
             values={SYM_X: x},
             result_values={SYM_Y: y},
-            init_estimates={SYM_A: basic_a, SYM_ALPHA: basic_alpha},
+            init_estimates={SYM_A: basic_a, SYM_B: basic_b},
             num_iter=MNK_NUM_ITER
     ):
         mnk_y = np.vectorize(
             sp.lambdify(
                 SYM_X,
                 SYM_EXPR.subs({SYM_A: mnk_a,
-                               SYM_ALPHA: mnk_alpha}),
+                               SYM_B: mnk_b}),
                 'numpy'
             )
         )(real_x)
@@ -210,7 +214,7 @@ for iter_i in range(NUM_ITER):
         mnk_std = std(mnk_y, real_y)
 
         print('MNK({}) a:      {}'.format(i, mnk_a))
-        print('MNK({}) alpha:  {}'.format(i, mnk_alpha))
+        print('MNK({}) b:  {}'.format(i, mnk_b))
         print('Dispersion:    {}'.format(mnk_disp))
         print('Std:           {}\n'.format(mnk_std))
 
@@ -226,9 +230,9 @@ for iter_i in range(NUM_ITER):
     #################
 
     # find params with mrt method
-    mrt_a, mrt_alpha = methods.search_mrt(
+    mrt_a, mrt_b = methods.search_mrt(
         delta_expression=SYM_EXPR_DELTA,
-        parameters=(SYM_A, SYM_ALPHA),
+        parameters=(SYM_A, SYM_B),
         values={SYM_X: x, SYM_Y: y},
         err_stds={SYM_X: ERR_X_STD, SYM_Y: ERR_Y_STD}
     )
@@ -237,7 +241,7 @@ for iter_i in range(NUM_ITER):
         sp.lambdify(
             SYM_X,
             SYM_EXPR.subs({SYM_A: mrt_a,
-                           SYM_ALPHA: mrt_alpha}),
+                           SYM_B: mrt_b}),
             'numpy'
         )
     )(real_x)
@@ -246,7 +250,7 @@ for iter_i in range(NUM_ITER):
     mrt_std = std(mrt_y, real_y)
 
     print('Mrt a:         {}'.format(mrt_a))
-    print('Mrt alpha:     {}'.format(mrt_alpha))
+    print('Mrt b:         {}'.format(mrt_b))
     print('Dispersion:    {}'.format(mrt_disp))
     print('Std:           {}'.format(mrt_std))
 
