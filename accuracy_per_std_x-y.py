@@ -28,8 +28,8 @@ SYM_ALPHA, SYM_BETA = SYM_PARAMS = sp.symbols('a b')
 # SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
 
 # quadratic function
-SYM_EXPR = sp.sympify('a*x + b*(x**2)')
-SYM_EXPR_DELTA = sp.sympify('y - a*x - b*(x**2)')
+# SYM_EXPR = sp.sympify('a*x + b*(x**2)')
+# SYM_EXPR_DELTA = sp.sympify('y - a*x - b*(x**2)')
 
 # cubic function
 # SYM_EXPR = sp.sympify('a*(x**2) + b*(x**3)')
@@ -44,15 +44,15 @@ SYM_EXPR_DELTA = sp.sympify('y - a*x - b*(x**2)')
 # SYM_EXPR_DELTA = sp.sympify('y - a * exp(b*x)')
 
 # sinusoidal function
-# SYM_EXPR = sp.sympify('a + alpha*sin(x)')
-# SYM_EXPR_DELTA = sp.sympify('y - (a + alpha*sin(x))')
+SYM_EXPR = sp.sympify('a + b*sin(0.2*x)')
+SYM_EXPR_DELTA = sp.sympify('y - (a + b*sin(0.2*x))')
 
 MIN_X = 0
 MAX_X = 10
 NUM_VALS = 100          # number of source values
 
 PRECISE_ALPHA = 0       # real 'alpha' value of source distribution
-PRECISE_BETA = -5       # real 'beta' value of source distiribution
+PRECISE_BETA = 1        # real 'beta' value of source distiribution
 
 ERR_NUM_STD_ITER = 20   # number of stds iterations
 
