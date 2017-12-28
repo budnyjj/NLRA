@@ -18,10 +18,10 @@ import stats.accuracy as accuracy
 DESCRIPTION = 'Use this script to determine estimates accuracy'
 
 SYM_X, SYM_Y = SYM_VALUES = sp.symbols('x y')
-SYM_ALPHA, SYM_BETA = SYM_PARAMS = sp.symbols('a b')
+SYM_A, SYM_B = SYM_PARAMS = sp.symbols('a b')
 
-# SYM_EXPR = sp.sympify('a * exp(-alpha*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - a * exp(-alpha*x)')
+# SYM_EXPR = sp.sympify('a * exp(-a*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - a * exp(-a*x)')
 
 # linear function
 # SYM_EXPR = sp.sympify('a + b*x')
@@ -31,32 +31,29 @@ SYM_ALPHA, SYM_BETA = SYM_PARAMS = sp.symbols('a b')
 # SYM_EXPR = sp.sympify('a*x + b*(x**2)')
 # SYM_EXPR_DELTA = sp.sympify('y - a*x - b*(x**2)')
 
-# cubic function
-# SYM_EXPR = sp.sympify('a*(x**2) + b*(x**3)')
-# SYM_EXPR_DELTA = sp.sympify('y - b*(x**3) - a*(x**2)')
-
 # hyperbolic function
 SYM_EXPR = sp.sympify('a + 1/(b*(x+1))')
 SYM_EXPR_DELTA = sp.sympify('y - a - 1/(b*(x+1))')
-
-# logarithmic function
-# SYM_EXPR = sp.sympify('a + alpha*log(x)')
-# SYM_EXPR_DELTA = sp.sympify('y - a - alpha*log(x)')
-
-# exponential function
-# SYM_EXPR = sp.sympify('a * exp(b*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - a * exp(b*x)')
 
 # sinusoidal function
 # SYM_EXPR = sp.sympify('a + b*sin(0.2*x)')
 # SYM_EXPR_DELTA = sp.sympify('y - (a + b*sin(0.2*x))')
 
+# logarithmic function
+# SYM_EXPR = sp.sympify('a + a*log(x)')
+# SYM_EXPR_DELTA = sp.sympify('y - a - a*log(x)')
+
+# exponential function
+# SYM_EXPR = sp.sympify('a * exp(b*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - a * exp(b*x)')
+
+
 MIN_X = 0
 MAX_X = 10
 NUM_VALS = 100          # number of source values
 
-PRECISE_ALPHA = 0       # real 'alpha' value of source distribution
-PRECISE_BETA = 0.001    # real 'beta' value of source distiribution
+PRECISE_A = 0           # real 'a' value of source distribution
+PRECISE_B = 0.1       # real 'b' value of source distiribution
 
 ERR_NUM_STD_ITER = 20   # number of stds iterations
 
@@ -84,8 +81,8 @@ args = parser.parse_args()
 output_path, _ = os.path.splitext(args.output)
 
 print('Expression:               {}'.format(SYM_EXPR))
-print('Precise ALPHA:            {}'.format(PRECISE_ALPHA))
-print('Precise BETA:             {}'.format(PRECISE_BETA))
+print('Precise A:                {}'.format(PRECISE_A))
+print('Precise B:                {}'.format(PRECISE_B))
 print('Real X:                   {}..{}'.format(MIN_X, MAX_X))
 print('STD X:                    {}..{}'.format(ERR_MIN_STD_X, ERR_MAX_STD_X))
 print('STD X step:               {}'.format(ERR_STEP_STD_X))
@@ -97,7 +94,7 @@ print('Output path:              {}'.format(output_path))
 # build precise values
 precise_expr = sp.lambdify(
     SYM_X,
-    SYM_EXPR.subs({SYM_ALPHA: PRECISE_ALPHA, SYM_BETA: PRECISE_BETA}),
+    SYM_EXPR.subs({SYM_A: PRECISE_A, SYM_B: PRECISE_B}),
     'numpy')
 precise_vectorized = np.vectorize(precise_expr)
 # get precise values
@@ -176,52 +173,52 @@ for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
             # Basic search #
             ################
             # find params with basic method
-            basic_alpha, basic_beta = methods.search_basic(
+            basic_a, basic_b = methods.search_basic(
                 delta_expression=SYM_EXPR_DELTA,
-                parameters=(SYM_ALPHA, SYM_BETA),
+                parameters=(SYM_A, SYM_B),
                 values=base_values
             )
-            # print('Basic alpha: {}'.format(basic_alpha))
-            # print('Basic beta:  {}'.format(basic_beta))
+            # print('Basic a: {}'.format(basic_a))
+            # print('Basic b:  {}'.format(basic_b))
             # add distance between estimates and real values
             basic_acc = accuracy.avg_euclidean_dst(
-                np.array(((PRECISE_ALPHA), (PRECISE_BETA))),
-                np.array(((basic_alpha), (basic_beta))))
+                np.array(((PRECISE_A), (PRECISE_B))),
+                np.array(((basic_a), (basic_b))))
             basic_accs[std_i, std_j] += basic_acc
 
             ##############
             # LSE search #
             ##############
             # use basic estimates as init estimates for LSE
-            lse_alpha, lse_beta = methods.search_lse(
+            lse_a, lse_b = methods.search_lse(
                     expression=SYM_EXPR,
-                    parameters=(SYM_ALPHA, SYM_BETA),
+                    parameters=(SYM_A, SYM_B),
                     values={SYM_X: measured_vals_x},
                     result_values={SYM_Y: measured_vals_y},
-                    init_estimates={SYM_ALPHA: basic_alpha, SYM_BETA: basic_beta},
+                    init_estimates={SYM_A: basic_a, SYM_B: basic_b},
                     num_iter=LSE_NUM_ITER)
-            # print('LSE({}) alpha: {}'.format(LSE_NUM_ITER, lse_alpha))
-            # print('LSE({}) beta:  {}'.format(LSE_NUM_ITER, lse_beta))
+            # print('LSE({}) a: {}'.format(LSE_NUM_ITER, lse_a))
+            # print('LSE({}) b:  {}'.format(LSE_NUM_ITER, lse_b))
             lse_acc = accuracy.avg_euclidean_dst(
-                np.array(((PRECISE_ALPHA), (PRECISE_BETA))),
-                np.array(((lse_alpha), (lse_beta))))
+                np.array(((PRECISE_A), (PRECISE_B))),
+                np.array(((lse_a), (lse_b))))
             lse_accs[std_i, std_j] += lse_acc
 
             ##############
             # Mrt search #
             ##############
             # find params with mrt method
-            mrt_alpha, mrt_beta = methods.search_mrt(
+            mrt_a, mrt_b = methods.search_mrt(
                 delta_expression=SYM_EXPR_DELTA,
-                parameters=(SYM_ALPHA, SYM_BETA),
+                parameters=(SYM_A, SYM_B),
                 values={SYM_X: measured_vals_x, SYM_Y: measured_vals_y},
                 err_stds={SYM_X: err_std_x, SYM_Y: err_std_y}
             )
-            # print('MRT alpha:    {}'.format(mrt_alpha))
-            # print('MRT beta:     {}'.format(mrt_beta))
+            # print('MRT a:    {}'.format(mrt_a))
+            # print('MRT b:     {}'.format(mrt_b))
             mrt_acc = accuracy.avg_euclidean_dst(
-                np.array(((PRECISE_ALPHA), (PRECISE_BETA))),
-                np.array(((mrt_alpha), (mrt_beta))))
+                np.array(((PRECISE_A), (PRECISE_B))),
+                np.array(((mrt_a), (mrt_b))))
             mrt_accs[std_i, std_j] += mrt_acc
 
 basic_accs /= NUM_ITER

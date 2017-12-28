@@ -28,8 +28,8 @@ SYM_A, SYM_B = SYM_PARAMS = sp.symbols('a b')
 # SYM_EXPR_DELTA = sp.sympify('y - a * exp(b*x)')
 
 # linear function
-SYM_EXPR = sp.sympify('a + b*x')
-SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
+# SYM_EXPR = sp.sympify('a + b*x')
+# SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
 
 # quadratic function
 # SYM_EXPR = sp.sympify('a*(x**2) + b*x')

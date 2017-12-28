@@ -62,9 +62,11 @@ plt.title('$ d_{param_{LSE}} - d_{param_{MRT}} $')
 plt.clabel(contour_param, inline=True, fontsize=10)
 plt.xlabel('$ \sigma_{\epsilon_x} $')
 plt.ylabel('$ \sigma_{\epsilon_y} $')
-plt.savefig(
-    '{}{}'.format(output_path, output_ext),
-    dpi=200)
+
+if args.output:
+    plt.savefig(
+        '{}{}'.format(output_path, output_ext),
+        dpi=200)
 
 if args.show:
     plt.show()
