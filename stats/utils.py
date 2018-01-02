@@ -1,23 +1,17 @@
-import math
+import numpy as np
 
-#######################
-# Statistical helpers #
-#######################
+def base_values_avg(sym_x, sym_y, vals_x, vals_y, num_vals):
+    """
+    Provides base values as averages of |num_vals| subgroups
+    """
+    base_values_x = np.zeros((num_vals))
+    base_values_y = np.zeros((num_vals))
+    for i, group_x in enumerate(np.array_split(vals_x, num_vals)):
+        base_values_x[i] = np.average(group_x)
 
-def avg(vals):
-    """Calculate average of values in list."""
-    return sum(vals) / float(len(vals))
-
-
-def disp(y_1, y_2):
-    """Calculate sum of differences between f[] and y[] values."""
-    total = 0
-    for i in range(min(len(y_1),
-                       len(y_2))):
-        total += (y_1[i] - y_2[i]) ** 2
-
-    return total
-
-def std(y_1, y_2):
-    """Calculate square root of dispersion."""
-    return math.sqrt(disp(y_1, y_2))
+    for i, group_y in enumerate(np.array_split(vals_y, num_vals)):
+        base_values_y[i] = np.average(group_y)
+    return {
+        sym_x: base_values_x,
+        sym_y: base_values_y
+    }
