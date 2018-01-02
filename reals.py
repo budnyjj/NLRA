@@ -19,7 +19,7 @@ import stats.utils as utils
 ################
 
 SYM_PARAMS = sp.symbols('a b c')
-PRECISE_PARAMS = (0, 0.1, 0.1)
+PRECISE_PARAMS = (0, 0, 5)
 SYM_X, SYM_Y = sp.symbols('x y')
 
 # SYM_EXPR = sp.sympify('a * exp(-b*x)')
@@ -33,12 +33,12 @@ SYM_X, SYM_Y = sp.symbols('x y')
 # SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
 
 # quadratic function
-# SYM_EXPR = sp.sympify('a*(x**2) + b*x')
-# SYM_EXPR_DELTA = sp.sympify('y - a*(x**2) - b*x')
+SYM_EXPR = sp.sympify('a + b*x + c*(x**2)')
+SYM_EXPR_DELTA = sp.sympify('y - (a + b*x + c*(x**2))')
 
 # inverse function
-SYM_EXPR = sp.sympify('a + 1/(b + c*x)')
-SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
+# SYM_EXPR = sp.sympify('a + 1/(b + c*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
 
 # logarithmic function
 # SYM_EXPR = sp.sympify('a + b*log(x)')

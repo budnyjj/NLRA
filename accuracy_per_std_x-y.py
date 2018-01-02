@@ -17,7 +17,7 @@ import stats.utils as utils
 DESCRIPTION = 'Use this script to determine estimates accuracy'
 
 SYM_PARAMS = sp.symbols('a b c')
-PRECISE_PARAMS = (1, 1, 0.5)
+PRECISE_PARAMS = (0, 0, -5)
 SYM_X, SYM_Y = sp.symbols('x y')
 
 # SYM_EXPR = sp.sympify('a * exp(-a*x)')
@@ -28,12 +28,12 @@ SYM_X, SYM_Y = sp.symbols('x y')
 # SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
 
 # quadratic function
-# SYM_EXPR = sp.sympify('a + b*x + c*(x**2)')
-# SYM_EXPR_DELTA = sp.sympify('y - a - b*x - c*(x**2)')
+SYM_EXPR = sp.sympify('a + b*x + c*(x**2)')
+SYM_EXPR_DELTA = sp.sympify('y - a - b*x - c*(x**2)')
 
 # inverse function
-SYM_EXPR = sp.sympify('a + 1/(b + c*x)')
-SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
+# SYM_EXPR = sp.sympify('a + 1/(b + c*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
 
 # exponential function
 # SYM_EXPR = sp.sympify('10 + exp(a + b*x)')
