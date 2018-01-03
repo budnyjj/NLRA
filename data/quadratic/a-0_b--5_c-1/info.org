@@ -1,0 +1,10 @@
+Expression:               a + b*x + c*x**2
+Symbolic parameters:      (a, b, c)
+Precise parameter values: (0, -5, 1)
+Real X:                   0..10
+STD X:                    0.001..2.001
+STD X step:               0.1
+STD Y:                    0.001..2.001
+STD Y step:               0.1
+Number of iterations:     100
+Output path:              data/quadratic/a-0_b-0_c--5/a-0_b--5_c-1
