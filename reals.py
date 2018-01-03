@@ -19,7 +19,7 @@ import stats.utils as utils
 ################
 
 SYM_PARAMS = sp.symbols('a b c')
-PRECISE_PARAMS = (0, 0, 5)
+PRECISE_PARAMS = (0, -5, 1)
 SYM_X, SYM_Y = sp.symbols('x y')
 
 # SYM_EXPR = sp.sympify('a * exp(-b*x)')
