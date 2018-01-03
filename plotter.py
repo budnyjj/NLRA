@@ -39,8 +39,8 @@ output_path, output_ext = None, None
 if args.output:
     output_path, output_ext = os.path.splitext(args.output)
 
-print('Input path:    {}'.format(input_path))
-print('Output path:   {}'.format(output_path))
+print('Input path:       {}'.format(input_path))
+print('Output path:      {}'.format(output_path))
 
 # load data
 err_stds_x = np.load(
@@ -53,7 +53,11 @@ mrt_param_accs = np.load(
     '{}_mrt-accs.npy'.format(input_path))
 
 # compute differences between accuracies
+print('Avg(d_LSE):       {}'.format(np.average(lse_param_accs)))
+print('Avg(d_MRT):       {}'.format(np.average(mrt_param_accs)))
+
 param_accs_diff = lse_param_accs - mrt_param_accs
+print('Avg(d_LSE-d_MRT): {}'.format(np.average(param_accs_diff)))
 
 plt.figure(0)
 contour_param = plt.contour(

@@ -19,7 +19,7 @@ import stats.utils as utils
 ################
 
 SYM_PARAMS = sp.symbols('a b c')
-PRECISE_PARAMS = (0, -5, 1)
+PRECISE_PARAMS = (0, 0.07, 0.01)
 SYM_X, SYM_Y = sp.symbols('x y')
 
 # SYM_EXPR = sp.sympify('a * exp(-b*x)')
@@ -33,12 +33,12 @@ SYM_X, SYM_Y = sp.symbols('x y')
 # SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
 
 # quadratic function
-SYM_EXPR = sp.sympify('a + b*x + c*(x**2)')
-SYM_EXPR_DELTA = sp.sympify('y - (a + b*x + c*(x**2))')
+# SYM_EXPR = sp.sympify('a + b*x + c*(x**2)')
+# SYM_EXPR_DELTA = sp.sympify('y - (a + b*x + c*(x**2))')
 
 # inverse function
-# SYM_EXPR = sp.sympify('a + 1/(b + c*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
+SYM_EXPR = sp.sympify('a + 1/(b + c*x)')
+SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
 
 # logarithmic function
 # SYM_EXPR = sp.sympify('a + b*log(x)')
@@ -53,10 +53,10 @@ MAX_X = 10
 NUM_VALS = 20              # number of source values
 
 ERR_X_AVG = 0              # average of X error values
-ERR_X_STD = 1              # std of X error values
+ERR_X_STD = 2              # std of X error values
 
 ERR_Y_AVG = 0              # average of Y error values
-ERR_Y_STD = 1              # std of Y error values
+ERR_Y_STD = 2              # std of Y error values
 
 NUM_ITER = 10              # number of realizations
 

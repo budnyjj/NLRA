@@ -17,7 +17,7 @@ import stats.utils as utils
 DESCRIPTION = 'Use this script to determine estimates accuracy'
 
 SYM_PARAMS = sp.symbols('a b c')
-PRECISE_PARAMS = (0, -5, 1)
+PRECISE_PARAMS = (0, 0.06, 0.01)
 SYM_X, SYM_Y = sp.symbols('x y')
 
 # SYM_EXPR = sp.sympify('a * exp(-a*x)')
@@ -28,12 +28,12 @@ SYM_X, SYM_Y = sp.symbols('x y')
 # SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
 
 # quadratic function
-SYM_EXPR = sp.sympify('a + b*x + c*(x**2)')
-SYM_EXPR_DELTA = sp.sympify('y - a - b*x - c*(x**2)')
+# SYM_EXPR = sp.sympify('a + b*x + c*(x**2)')
+# SYM_EXPR_DELTA = sp.sympify('y - a - b*x - c*(x**2)')
 
 # inverse function
-# SYM_EXPR = sp.sympify('a + 1/(b + c*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
+SYM_EXPR = sp.sympify('a + 1/(b + c*x)')
+SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
 
 # exponential function
 # SYM_EXPR = sp.sympify('10 + exp(a + b*x)')
@@ -170,6 +170,7 @@ for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
                 result_values={SYM_Y: measured_vals_y},
                 init_estimates=dict(zip(SYM_PARAMS, basic_params)),
                 num_iter=LSE_NUM_ITER)
+            # print('LSE params: {}'.format(lse_params))
             lse_accs[std_i, std_j] += accuracy.avg_euclidean_dst(
                 precise_params,
                 np.vstack(lse_params))
