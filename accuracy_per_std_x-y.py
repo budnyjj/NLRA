@@ -5,6 +5,8 @@ import argparse
 import numpy as np
 import sympy as sp
 
+from numpy.linalg.linalg import LinAlgError
+
 import stats.accuracy as accuracy
 import stats.estimators as estimators
 import stats.methods as methods
@@ -17,7 +19,7 @@ import stats.utils as utils
 DESCRIPTION = 'Use this script to determine estimates accuracy'
 
 SYM_PARAMS = sp.symbols('a b c')
-PRECISE_PARAMS = (0, 0.06, 0.01)
+PRECISE_PARAMS = (0, 0.07, 0.01)
 SYM_X, SYM_Y = sp.symbols('x y')
 
 # SYM_EXPR = sp.sympify('a * exp(-a*x)')
@@ -162,33 +164,44 @@ for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
             ##############
             # LSE search #
             ##############
-            # use basic estimates as init estimates for LSE
-            lse_params = methods.search_lse(
-                expression=SYM_EXPR,
-                parameters=SYM_PARAMS,
-                values={SYM_X: measured_vals_x},
-                result_values={SYM_Y: measured_vals_y},
-                init_estimates=dict(zip(SYM_PARAMS, basic_params)),
-                num_iter=LSE_NUM_ITER)
-            # print('LSE params: {}'.format(lse_params))
-            lse_accs[std_i, std_j] += accuracy.avg_euclidean_dst(
-                precise_params,
-                np.vstack(lse_params))
+            while True:
+                # use basic estimates as init estimates for LSE
+                try:
+                    lse_params = methods.search_lse(
+                        expression=SYM_EXPR,
+                        parameters=SYM_PARAMS,
+                        values={SYM_X: measured_vals_x},
+                        result_values={SYM_Y: measured_vals_y},
+                        init_estimates=dict(zip(SYM_PARAMS, basic_params)),
+                        num_iter=LSE_NUM_ITER)
+                    # print('LSE params: {}'.format(lse_params))
+                    lse_accs[std_i, std_j] += accuracy.avg_euclidean_dst(
+                        precise_params,
+                        np.vstack(lse_params))
+                    break
+                except LinAlgError:
+                    print('LSE: singular matrix')
 
             ##############
             # MRT search #
             ##############
             # find params with mrt method
-            mrt_params = methods.search_mrt(
-                delta_expression=SYM_EXPR_DELTA,
-                parameters=SYM_PARAMS,
-                values={SYM_X: measured_vals_x, SYM_Y: measured_vals_y},
-                err_stds={SYM_X: err_std_x, SYM_Y: err_std_y}
-            )
-            # print('MRT params:    {}'.format(mrt_params))
-            mrt_accs[std_i, std_j] += accuracy.avg_euclidean_dst(
-                precise_params,
-                np.vstack(mrt_params))
+            while True:
+                try:
+                    mrt_params = methods.search_mrt(
+                        delta_expression=SYM_EXPR_DELTA,
+                        parameters=SYM_PARAMS,
+                        values={SYM_X: measured_vals_x, SYM_Y: measured_vals_y},
+                        err_stds={SYM_X: err_std_x, SYM_Y: err_std_y}
+                    )
+                    # print('MRT params:    {}'.format(mrt_params))
+                    mrt_accs[std_i, std_j] += accuracy.avg_euclidean_dst(
+                        precise_params,
+                        np.vstack(mrt_params))
+                    break
+                except LinAlgError:
+                    print('MRT: singular matrix')
+
 
 basic_accs /= NUM_ITER
 lse_accs /= NUM_ITER

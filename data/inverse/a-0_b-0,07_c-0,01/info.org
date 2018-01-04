@@ -1,0 +1,13 @@
+Expression:               a + 1/(b + c*x)
+Symbolic parameters:      (a, b, c)
+Precise parameter values: (0, 0.07, 0.01)
+Real X:                   0..10
+STD X:                    0.001..2.001
+STD X step:               0.1
+STD Y:                    0.001..2.001
+STD Y step:               0.1
+Number of iterations:     100
+Output path:              data/inverse/a-0_b-0,07_c-0,01/a-0_b-0,07_c-0,01
+Avg(d_LSE):       330293685.359956
+Avg(d_MRT):       8.018284273617025
+Avg(d_LSE-d_MRT): 330293677.34167176
