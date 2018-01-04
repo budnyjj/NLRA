@@ -102,10 +102,6 @@ precise_expr = sp.lambdify(
     SYM_EXPR.subs(zip(SYM_PARAMS, PRECISE_PARAMS)),
     'numpy')
 precise_vectorized = np.vectorize(precise_expr)
-# get precise values
-precise_vals_x, precise_vals_y = estimators.precise(
-    precise_vectorized, NUM_VALS,
-    MIN_X, MAX_X)
 
 # generate array of X error stds
 err_stds_x = np.linspace(ERR_MIN_STD_X, ERR_MAX_STD_X, ERR_NUM_STD_ITER)
@@ -164,7 +160,9 @@ for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
             ##############
             # LSE search #
             ##############
+            num_lse_attempts = 0
             while True:
+                num_lse_attempts += 1
                 # use basic estimates as init estimates for LSE
                 try:
                     lse_params = methods.search_lse(
@@ -180,13 +178,15 @@ for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
                         np.vstack(lse_params))
                     break
                 except LinAlgError:
-                    print('LSE: singular matrix')
+                    print('LSE: singular matrix: {}'.format(num_lse_attempts))
 
             ##############
             # MRT search #
             ##############
             # find params with mrt method
+            num_mrt_attempts = 0
             while True:
+                num_mrt_attempts += 1
                 try:
                     mrt_params = methods.search_mrt(
                         delta_expression=SYM_EXPR_DELTA,
@@ -200,7 +200,8 @@ for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
                         np.vstack(mrt_params))
                     break
                 except LinAlgError:
-                    print('MRT: singular matrix')
+                    print('MRT: singular matrix: {}'.format(num_mrt_attempts))
+            # print('\n')
 
 
 basic_accs /= NUM_ITER

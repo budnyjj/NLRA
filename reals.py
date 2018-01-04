@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif', size=20)
 
+import stats.estimators as estimators
 import stats.methods as methods
 import stats.utils as utils
 
@@ -19,7 +20,7 @@ import stats.utils as utils
 ################
 
 SYM_PARAMS = sp.symbols('a b c')
-PRECISE_PARAMS = (0, 0.035, 0.005)
+PRECISE_PARAMS = (0, 0.07, 0.01)
 SYM_X, SYM_Y = sp.symbols('x y')
 
 # SYM_EXPR = sp.sympify('a * exp(-b*x)')
@@ -52,11 +53,11 @@ MIN_X = 0
 MAX_X = 10
 NUM_VALS = 20              # number of source values
 
-ERR_X_AVG = 0              # average of X error values
-ERR_X_STD = 2              # std of X error values
+ERR_AVG_X = 0              # average of X error values
+ERR_STD_X = 2              # std of X error values
 
-ERR_Y_AVG = 0              # average of Y error values
-ERR_Y_STD = 2              # std of Y error values
+ERR_AVG_Y = 0              # average of Y error values
+ERR_STD_Y = 2              # std of Y error values
 
 NUM_ITER = 10              # number of realizations
 
@@ -74,38 +75,31 @@ parser.add_argument('-w', '--write-to', metavar='PATH',
 # parse cli options
 args = parser.parse_args()
 
-# precise X values without errors
-precise_x = np.linspace(MIN_X, MAX_X, NUM_VALS, dtype=np.float)
-
-# precise Y values without errors
-precise_y = np.vectorize(
-    sp.lambdify(
-        SYM_X,
-        SYM_EXPR.subs(dict(zip(SYM_PARAMS, PRECISE_PARAMS))),
-        'numpy'
-    )
-)(precise_x)
-
 print('Expression:               {}'.format(SYM_EXPR))
 print('Symbolic parameters:      {}'.format(SYM_PARAMS))
 print('Precise parameter values: {}'.format(PRECISE_PARAMS))
-print('Error X std:              {}'.format(ERR_X_STD))
-print('Error Y std:              {}'.format(ERR_Y_STD))
-print('Number of iterations:     {}'.format(NUM_ITER))
+print('Error X std:              {}'.format(ERR_STD_X))
+print('Error Y std:              {}'.format(ERR_STD_Y))
+print('Number of iterations:     {}\n'.format(NUM_ITER))
+
+# get precise param values
+precise_params = np.vstack(PRECISE_PARAMS)
+# build precise values
+precise_expr = sp.lambdify(
+    SYM_X,
+    SYM_EXPR.subs(zip(SYM_PARAMS, PRECISE_PARAMS)),
+    'numpy')
+precise_vectorized = np.vectorize(precise_expr)
+precise_vals_x, _ = estimators.precise(
+    precise_vectorized, NUM_VALS,
+    MIN_X, MAX_X)
 
 # iterate by error standart derivation values
 for iter_i in range(NUM_ITER):
-    # add X errors with current normal distribution
-    x = np.vectorize(
-        lambda v: v + random.gauss(ERR_X_AVG, ERR_X_STD)
-    )(precise_x)
-
-    half_len = len(x) // 2
-
-    # add Y errors with current normal distribution
-    y = np.vectorize(
-        lambda v: v + random.gauss(ERR_Y_AVG, ERR_Y_STD)
-    )(precise_y)
+    measured_vals_x, measured_vals_y = estimators.uniform(
+        precise_vectorized, NUM_VALS,
+        MIN_X, MAX_X,
+        ERR_STD_X, ERR_STD_Y)
 
     # plot precise values on all figures
     for i in range(4):
@@ -113,7 +107,7 @@ for iter_i in range(NUM_ITER):
         plt.xlabel('$ X_o $')
         plt.ylabel('$ Y_o $')
         plt.grid(True)
-        plt.plot(x, y,
+        plt.plot(measured_vals_x, measured_vals_y,
                  color='b', linestyle=' ',
                  marker='.', markersize=10,
                  mfc='r', label='values')
@@ -123,9 +117,12 @@ for iter_i in range(NUM_ITER):
     ################################
 
     # set base values to subgroup averages
-    base_values = utils.base_values_avg(SYM_X, SYM_Y, x, y, len(SYM_PARAMS))
+    base_values = utils.base_values_avg(
+        SYM_X, SYM_Y,
+        measured_vals_x, measured_vals_y,
+        len(SYM_PARAMS))
 
-    print("Base values: {}\n".format(base_values))
+    print("Base values: {}".format(base_values))
 
     ################
     # Basic search #
@@ -138,18 +135,18 @@ for iter_i in range(NUM_ITER):
         values=base_values
     )
 
-    basic_y = np.vectorize(
+    basic_vals_y = np.vectorize(
         sp.lambdify(
             SYM_X,
             SYM_EXPR.subs(zip(SYM_PARAMS, basic_params)),
             'numpy'
         )
-    )(precise_x)
+    )(precise_vals_x)
 
     print('Basic params:       {}'.format(basic_params))
 
     plt.figure(1)
-    plt.plot(precise_x, basic_y,
+    plt.plot(precise_vals_x, basic_vals_y,
              color='g', linestyle='-',
              marker='.', markersize=5,
              mfc='g')
@@ -162,24 +159,24 @@ for iter_i in range(NUM_ITER):
     for i, lse_params in methods.search_lse2(
             expression=SYM_EXPR,
             parameters=SYM_PARAMS,
-            values={SYM_X: x},
-            result_values={SYM_Y: y},
+            values={SYM_X: measured_vals_x},
+            result_values={SYM_Y: measured_vals_y},
             init_estimates=dict(zip(SYM_PARAMS, basic_params)),
             num_iter=LSE_NUM_ITER
     ):
-        lse_y = np.vectorize(
+        lse_vals_y = np.vectorize(
             sp.lambdify(
                 SYM_X,
                 SYM_EXPR.subs(zip(SYM_PARAMS, lse_params)),
                 'numpy'
             )
-        )(precise_x)
+        )(precise_vals_x)
 
         print('LSE({}) params:      {}'.format(i, lse_params))
 
     plt.figure(2)
     # plot only last iteration
-    plt.plot(precise_x, lse_y,
+    plt.plot(precise_vals_x, lse_vals_y,
              color='b', linestyle='-',
              marker='.', markersize=5,
              mfc='b')
@@ -192,27 +189,25 @@ for iter_i in range(NUM_ITER):
     mrt_params = methods.search_mrt(
         delta_expression=SYM_EXPR_DELTA,
         parameters=SYM_PARAMS,
-        values={SYM_X: x, SYM_Y: y},
-        err_stds={SYM_X: ERR_X_STD, SYM_Y: ERR_Y_STD}
+        values={SYM_X: measured_vals_x, SYM_Y: measured_vals_y},
+        err_stds={SYM_X: ERR_STD_X, SYM_Y: ERR_STD_Y}
     )
 
-    mrt_y = np.vectorize(
+    mrt_vals_y = np.vectorize(
         sp.lambdify(
             SYM_X,
             SYM_EXPR.subs(zip(SYM_PARAMS, mrt_params)),
             'numpy'
         )
-    )(precise_x)
+    )(precise_vals_x)
 
-    print('MRT params:         {}'.format(mrt_params))
+    print('MRT params:         {}\n'.format(mrt_params))
 
     plt.figure(3)
-    plt.plot(precise_x, mrt_y,
+    plt.plot(precise_vals_x, mrt_vals_y,
              color='r', linestyle='-',
              marker='.', markersize=5,
              mfc='r')
-
-    print('-' * 40, '\n')
 
 if args.write_to:
     file_name, file_ext = os.path.splitext(args.write_to)
