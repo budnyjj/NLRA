@@ -1,0 +1,13 @@
+Expression:               a + b*sin(x)
+Symbolic parameters:      (a, b)
+Precise parameter values: (0, 5)
+Real X:                   0..10
+STD X:                    0.001..2.001
+STD X step:               0.1
+STD Y:                    0.001..2.001
+STD Y step:               0.1
+Number of iterations:     100
+Output path:              data/sinusoidal/a-0_b-5/a-0_b-5
+Avg(d_LSE):       2.2720136951729852
+Avg(d_MRT):       2.6463032503439154
+Avg(d_LSE-d_MRT): -0.3742895551709307

@@ -8,3 +8,6 @@ STD Y:                    0.001..2.001
 STD Y step:               0.1
 Number of iterations:     100
 Output path:              data/quadratic/a-0_b-0_c--5/a-0_b-0_c--5
+Avg(d_LSE):       14.686459732015129
+Avg(d_MRT):       16.287304932075525
+Avg(d_LSE-d_MRT): -1.600845200060397

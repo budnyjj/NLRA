@@ -19,27 +19,25 @@ import stats.utils as utils
 # Declarations #
 ################
 
-SYM_PARAMS = sp.symbols('a b c')
-PRECISE_PARAMS = (0, 0.07, 0.01)
+SYM_PARAMS = sp.symbols('a b')
+PRECISE_PARAMS = (0, 1)
 SYM_X, SYM_Y = sp.symbols('x y')
 
-# SYM_EXPR = sp.sympify('a * exp(-b*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - a * exp(-b*x)')
-
-# SYM_EXPR = sp.sympify('a * exp(b*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - a * exp(b*x)')
-
 # linear function
-# SYM_EXPR = sp.sympify('a + b*x')
-# SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
+SYM_EXPR = sp.sympify('a + b*x')
+SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
 
 # quadratic function
 # SYM_EXPR = sp.sympify('a + b*x + c*(x**2)')
 # SYM_EXPR_DELTA = sp.sympify('y - (a + b*x + c*(x**2))')
 
 # inverse function
-SYM_EXPR = sp.sympify('a + 1/(b + c*x)')
-SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
+# SYM_EXPR = sp.sympify('a + 1/(b + c*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
+
+# exponential function
+# SYM_EXPR = sp.sympify('exp(b + c*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - exp(b + c*x)')
 
 # logarithmic function
 # SYM_EXPR = sp.sympify('a + b*log(x)')
@@ -54,12 +52,12 @@ MAX_X = 10
 NUM_VALS = 20              # number of source values
 
 ERR_AVG_X = 0              # average of X error values
-ERR_STD_X = 2              # std of X error values
+ERR_STD_X = 0.5              # std of X error values
 
 ERR_AVG_Y = 0              # average of Y error values
-ERR_STD_Y = 2              # std of Y error values
+ERR_STD_Y = 0.5              # std of Y error values
 
-NUM_ITER = 10              # number of realizations
+NUM_ITER = 10               # number of realizations
 
 LSE_NUM_ITER = 1           # number of LSE iterations
 

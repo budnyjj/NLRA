@@ -18,28 +18,25 @@ import stats.utils as utils
 
 DESCRIPTION = 'Use this script to determine estimates accuracy'
 
-SYM_PARAMS = sp.symbols('a b c')
-PRECISE_PARAMS = (0, 0.07, 0.01)
+SYM_PARAMS = sp.symbols('a b')
+PRECISE_PARAMS = (0, 0.2)
 SYM_X, SYM_Y = sp.symbols('x y')
 
-# SYM_EXPR = sp.sympify('a * exp(-a*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - a * exp(-a*x)')
-
 # linear function
-# SYM_EXPR = sp.sympify('a + b*x')
-# SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
+SYM_EXPR = sp.sympify('a + b*x')
+SYM_EXPR_DELTA = sp.sympify('y - a - b*x')
 
 # quadratic function
 # SYM_EXPR = sp.sympify('a + b*x + c*(x**2)')
 # SYM_EXPR_DELTA = sp.sympify('y - a - b*x - c*(x**2)')
 
 # inverse function
-SYM_EXPR = sp.sympify('a + 1/(b + c*x)')
-SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
+# SYM_EXPR = sp.sympify('a + 1/(b + c*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
 
 # exponential function
-# SYM_EXPR = sp.sympify('10 + exp(a + b*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - 10 - exp(a + b*x)')
+# SYM_EXPR = sp.sympify('exp(a + b*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - exp(a + b*x)')
 
 # logarithmic function
 # SYM_EXPR = sp.sympify('b + c*ln(x+10)')
@@ -50,8 +47,8 @@ SYM_EXPR_DELTA = sp.sympify('y - (a + 1/(b + c*x))')
 # SYM_EXPR_DELTA = sp.sympify('y - 1/(1+exp(-b*x))')
 
 # sinusoidal function
-# SYM_EXPR = sp.sympify('a + b*sin(0.2*x)')
-# SYM_EXPR_DELTA = sp.sympify('y - (a + b*sin(0.2*x))')
+# SYM_EXPR = sp.sympify('a + b*sin(2*x)')
+# SYM_EXPR_DELTA = sp.sympify('y - (a + b*sin(2*x))')
 
 
 MIN_X = 0
@@ -122,10 +119,13 @@ std_iter = 0
 for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
     for std_j, (err_std_x, err_std_y) in enumerate(err_std_row):
         std_iter += 1
-        print("Iteration {}/{}: std X: {:.2f}, std Y: {:.2f}".format(
-              std_iter, num_std_iter, err_std_x, err_std_y))
+        print('Iteration {}/{}: std X: {:.2f}, std Y: {:.2f}'.format(
+              std_iter, num_std_iter, err_std_x, err_std_y),
+              end = ' -> ')
 
-        # iterate by error standart derivation values
+        num_lse_success_attempts = 0
+        num_mrt_success_attempts = 0
+        # iterate by error standart deviation values
         for iter_i in range(NUM_ITER):
             measured_vals_x, measured_vals_y = estimators.uniform(
                 precise_vectorized, NUM_VALS,
@@ -160,53 +160,49 @@ for std_i, err_std_row in enumerate(np.dstack((err_stds_x, err_stds_y))):
             ##############
             # LSE search #
             ##############
-            num_lse_attempts = 0
-            while True:
-                num_lse_attempts += 1
-                # use basic estimates as init estimates for LSE
-                try:
-                    lse_params = methods.search_lse(
-                        expression=SYM_EXPR,
-                        parameters=SYM_PARAMS,
-                        values={SYM_X: measured_vals_x},
-                        result_values={SYM_Y: measured_vals_y},
-                        init_estimates=dict(zip(SYM_PARAMS, basic_params)),
-                        num_iter=LSE_NUM_ITER)
-                    # print('LSE params: {}'.format(lse_params))
-                    lse_accs[std_i, std_j] += accuracy.avg_euclidean_dst(
-                        precise_params,
-                        np.vstack(lse_params))
-                    break
-                except LinAlgError:
-                    print('LSE: singular matrix: {}'.format(num_lse_attempts))
+            try:
+                lse_params = methods.search_lse(
+                    expression=SYM_EXPR,
+                    parameters=SYM_PARAMS,
+                    values={SYM_X: measured_vals_x},
+                    result_values={SYM_Y: measured_vals_y},
+                    init_estimates=dict(zip(SYM_PARAMS, basic_params)),
+                    num_iter=LSE_NUM_ITER)
+            except LinAlgError:
+                pass
+            else:
+                # print('LSE params: {}'.format(lse_params))
+                lse_accs[std_i, std_j] += accuracy.avg_euclidean_dst(
+                    precise_params,
+                    np.vstack(lse_params))
+                num_lse_success_attempts += 1
 
             ##############
             # MRT search #
             ##############
             # find params with mrt method
-            num_mrt_attempts = 0
-            while True:
-                num_mrt_attempts += 1
-                try:
-                    mrt_params = methods.search_mrt(
-                        delta_expression=SYM_EXPR_DELTA,
-                        parameters=SYM_PARAMS,
-                        values={SYM_X: measured_vals_x, SYM_Y: measured_vals_y},
-                        err_stds={SYM_X: err_std_x, SYM_Y: err_std_y}
-                    )
-                    # print('MRT params:    {}'.format(mrt_params))
-                    mrt_accs[std_i, std_j] += accuracy.avg_euclidean_dst(
-                        precise_params,
-                        np.vstack(mrt_params))
-                    break
-                except LinAlgError:
-                    print('MRT: singular matrix: {}'.format(num_mrt_attempts))
-            # print('\n')
+            try:
+                mrt_params = methods.search_mrt(
+                    delta_expression=SYM_EXPR_DELTA,
+                    parameters=SYM_PARAMS,
+                    values={SYM_X: measured_vals_x, SYM_Y: measured_vals_y},
+                    err_stds={SYM_X: err_std_x, SYM_Y: err_std_y}
+                )
+            except LinAlgError:
+                pass
+            else:
+                # print('MRT params:    {}'.format(mrt_params))
+                mrt_accs[std_i, std_j] += accuracy.avg_euclidean_dst(
+                    precise_params,
+                    np.vstack(mrt_params))
+                num_mrt_success_attempts += 1
 
+        print('LSE: {}, MRT: {}'.format(
+            num_lse_success_attempts, num_mrt_success_attempts))
+        lse_accs[std_i, std_j] /= num_lse_success_attempts
+        mrt_accs[std_i, std_j] /= num_mrt_success_attempts
 
 basic_accs /= NUM_ITER
-lse_accs /= NUM_ITER
-mrt_accs /= NUM_ITER
 
 np.save(
     '{}_err-stds-x.npy'.format(output_path),

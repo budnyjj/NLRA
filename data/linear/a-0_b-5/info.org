@@ -1,0 +1,13 @@
+Expression:               a + b*x
+Symbolic parameters:      (a, b)
+Precise parameter values: (0, 5)
+Real X:                   0..10
+STD X:                    0.001..2.001
+STD X step:               0.1
+STD Y:                    0.001..2.001
+STD Y step:               0.1
+Number of iterations:     100
+Output path:              data/linear/a-0_b-5/a-0_b-5
+Avg(d_LSE):       3.259936300505312
+Avg(d_MRT):       5.200761836260495
+Avg(d_LSE-d_MRT): -1.9408255357551831

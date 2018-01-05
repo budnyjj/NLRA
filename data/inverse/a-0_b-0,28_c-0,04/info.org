@@ -8,6 +8,6 @@ STD Y:                    0.001..2.001
 STD Y step:               0.1
 Number of iterations:     100
 Output path:              data/inverse/a-0_b-0,28_c-0,04/a-0_b-0,28_c-0,04
-Avg(d_LSE):       612382922.8586155
-Avg(d_MRT):       2.263689516102405
-Avg(d_LSE-d_MRT): 612382920.5949261
+Avg(d_LSE):       3358.0971773359242
+Avg(d_MRT):       2.273345540148189
+Avg(d_LSE-d_MRT): 3355.8238317957766
