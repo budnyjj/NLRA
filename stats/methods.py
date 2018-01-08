@@ -1,5 +1,3 @@
-import math
-
 import sympy as sp
 import numpy as np
 
@@ -179,43 +177,29 @@ def search_basic(delta_expression, parameters, values):
 
 def search_lse2(expression, parameters, values,
                 result_values, init_estimates,
-                err_stds=None, num_iter=1):
-    """Search estimates of ditribution parameters with LSE method.
+                num_iter=1):
+    """
+    Computes estimates of ditribution parameters with LSE method.
 
     Parameters:
         expression --- sympy object, which represents target expression,
-    for example, 'a * exp(-alpha*x)'
-
-        parameters --- list of sympy objects, whose estimates we
-    should find, for example, (a, alpha)
-
-        values --- dict of values, keyed by sympy objects
-    for example, {x: [x1, x2, ...]}
-
+            for example, 'a * exp(-alpha*x)'
+        parameters --- list of sympy objects, whose estimates we should find,
+            for example, (a, alpha)
+        values --- dict of values, keyed by sympy objects,
+            for example, {x: [x1, x2, ...]}
         result_values --- dict of result values, keyed by sympy objects
-    for example, {y: [y1, y2, ...]}
-
-        init_estimates --- dict of init values of estimates, used in
-    iterational search of estimates, keyed by sympy objects
-    for example, {x: 0, y: 0}
-
-        err_stds --- dict of standart error deviations of values,
-    keyed by sympy objects, for example:
-    {x: 0.2, y: 0.2}
-
+            for example, {y: [y1, y2, ...]}
+        init_estimates --- dict of init values of estimates,
+            used in iterational search of estimates, keyed by sympy objects,
+            for example: {x: 0, y: 0}
         num_iter --- number of method iterations
 
     Yield:
-        cur_num_iter, cur_estimates --- list of target
-    estimates by number of iteration
-
+        cur_num_iter, cur_estimates --- pair of number of iteration and computed estimates
     """
-
     # get list of symbolic values
     sym_vals = tuple(values.keys())
-
-    # get list of symbolic result values
-    sym_res_vals = tuple(result_values.keys())
 
     # get array of real values
     vals = []
