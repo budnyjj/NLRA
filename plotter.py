@@ -62,9 +62,10 @@ print('Avg(d_LSE-d_MRT): {}'.format(np.average(param_accs_diff)))
 plt.figure(0)
 contour_param = plt.contour(
     err_stds_x, err_stds_y, param_accs_diff,
-    colors='black')
+    colors='black', linestyles='solid')
 # plt.title('$ d_{param_{LSE}} - d_{param_{MRT}} $')
-plt.clabel(contour_param, inline=True, fontsize=10)
+plt.grid()
+plt.clabel(contour_param, inline=True, fontsize=8)
 plt.xlabel('$ \sigma_{\epsilon_x} $')
 plt.ylabel('$ \sigma_{\epsilon_y} $')
 
